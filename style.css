@@ -1,43 +1,82 @@
-body{
+*{
 margin:0;
+padding:0;
+box-sizing:border-box;
 font-family:Arial, Helvetica, sans-serif;
-background:#111;
-color:white;
-text-align:center;
 }
 
-header{
+body{
+background:#0d0d17;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.container{
+display:flex;
+width:1100px;
+height:600px;
+overflow:hidden;
+}
+
+/* linke Seite */
+
+.left{
+width:45%;
 padding:60px;
-background:#000;
+color:white;
+background:linear-gradient(180deg,#7a0000,#d40000);
+}
+
+.logo{
+letter-spacing:4px;
+font-size:20px;
+margin-bottom:10px;
 }
 
 h1{
-font-size:48px;
+font-size:80px;
+margin-bottom:50px;
 }
 
-main{
-padding:40px;
+.menu-item{
+display:flex;
+gap:20px;
+margin-bottom:40px;
 }
 
-button{
-background:#ff3b3b;
-border:none;
-padding:15px 30px;
-font-size:18px;
-border-radius:8px;
-color:white;
-cursor:pointer;
+.menu-item h3{
+margin-bottom:8px;
 }
 
-button:hover{
-background:#ff1a1a;
-}
-
-footer{
-margin-top:60px;
-padding:20px;
-background:#000;
+.menu-item p{
 font-size:14px;
+line-height:1.4;
+color:#f0f0f0;
 }
 
+.icon{
+width:60px;
+height:60px;
+border-radius:50%;
+}
 
+/* rechte Seite */
+
+.right{
+width:55%;
+background:white;
+transform:skewX(-8deg);
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+gap:40px;
+}
+
+.right img{
+width:180px;
+transform:skewX(8deg);
+border-radius:12px;
+}
