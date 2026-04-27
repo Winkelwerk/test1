@@ -62,6 +62,19 @@
       padding: 20px;
       border-radius: 12px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: scale(1.03);
+    }
+
+    .card img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 10px;
     }
 
     footer {
@@ -108,11 +121,13 @@
   <div class="menu">
 
     <div class="card">
+      <img src="https://oldworldgardenfarms.com/wp-content/uploads/2025/05/smashburger-735x735.jpg" alt="Smashburger">
       <h3>Smashburger</h3>
       <p>Frisch gesmashtes Rindfleisch-Patty vom Holzkohlegrill im Sesam-Bun, mit Salat, Tomaten und geschmolzenem Ofenkäse.</p>
     </div>
 
     <div class="card">
+      <img src="https://images.getrecipekit.com/20250721213330-Tandoori-Chicken-2.jpg?aspect_ratio=16:9&quality=90&" alt="Tandoori Chicken">
       <h3>Tandoori Chicken</h3>
       <p>Chicken mariniert in Joghurt und Gewürzen, gegrillt in einem Tandoor für einen besonders intensiven Geschmack.</p>
     </div>
@@ -142,7 +157,7 @@
 <script>
 const ua = navigator.userAgent;
 console.log("User Agent:", ua);
-// Geräteerkennung + Hinweis
+
 function getDeviceType() {
   const ua = navigator.userAgent;
   if (/tablet|ipad|playbook|silk/i.test(ua)) return "Tablet";
@@ -153,7 +168,6 @@ function getDeviceType() {
 const device = getDeviceType();
 console.log("Gerät:", device);
 
-// Optional: Hinweis für Mobile User
 if (device === "Mobile") {
   const notice = document.createElement("div");
   notice.innerText = "Du nutzt die mobile Version 📱";
