@@ -10,28 +10,56 @@ body{
   color:white;
 }
 
-/* NAVBAR */
+/* NAVBAR (hidden old style optional) */
 
 nav{
   position:fixed;
-  width:100%;
+  width:250px;
+  height:100vh;
   top:0;
-  background:rgba(0,0,0,0.8);
-  padding:15px;
-  text-align:center;
+  left:-250px;
+  background:rgba(0,0,0,0.95);
+  padding-top:80px;
+  text-align:left;
   z-index:1000;
+  transition:0.3s;
+  display:flex;
+  flex-direction:column;
 }
 
 nav a{
   color:white;
-  margin:0 15px;
+  padding:15px 20px;
   text-decoration:none;
   font-weight:bold;
   transition:0.3s;
+  border-bottom:1px solid rgba(255,255,255,0.1);
 }
 
 nav a:hover{
   color:#ff4d4d;
+  background:rgba(255,255,255,0.05);
+}
+
+/* HAMBURGER ICON */
+
+.menu-icon{
+  position:fixed;
+  top:15px;
+  left:15px;
+  font-size:28px;
+  cursor:pointer;
+  z-index:1100;
+  background:rgba(0,0,0,0.7);
+  padding:8px 12px;
+  border-radius:8px;
+  user-select:none;
+}
+
+/* OPEN STATE */
+
+nav.open{
+  left:0;
 }
 
 /* HERO SECTION */
@@ -48,6 +76,7 @@ header{
   linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
   url('https://images.getrecipekit.com/20250721213330-Tandoori-Chicken-2.jpg?aspect_ratio=16:9&quality=90&') center/cover;
 }
+
 header h1{
   font-size:70px;
   margin-bottom:10px;
@@ -146,11 +175,6 @@ footer{
 
   header h1{
     font-size:40px;
-  }
-
-  nav a{
-    display:block;
-    margin:10px 0;
   }
 
   .menu{
