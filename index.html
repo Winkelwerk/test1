@@ -189,29 +189,6 @@
 function toggleMenu(){
   document.getElementById("sideMenu").classList.toggle("open");
 }
-
-// Mobile Hinweis (dein Code behalten)
-const ua = navigator.userAgent;
-function getDeviceType() {
-  if (/tablet|ipad|playbook|silk/i.test(ua)) return "Tablet";
-  if (/mobile|android|iphone/i.test(ua)) return "Mobile";
-  return "Desktop";
-}
-
-if (getDeviceType() === "Mobile") {
-  const notice = document.createElement("div");
-  notice.innerText = "Du nutzt die mobile Version 📱";
-  notice.style.position = "fixed";
-  notice.style.bottom = "10px";
-  notice.style.left = "50%";
-  notice.style.transform = "translateX(-50%)";
-  notice.style.background = "black";
-  notice.style.color = "white";
-  notice.style.padding = "10px 15px";
-  notice.style.borderRadius = "8px";
-  notice.style.fontSize = "14px";
-  document.body.appendChild(notice);
-}
 </script>
 
 </body>
