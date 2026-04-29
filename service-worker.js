@@ -1,4 +1,4 @@
-const CACHE_NAME = "winkelwerk-shell-v2";
+const CACHE_NAME = "winkelwerk-shell-v3";
 const DB_NAME = "winkelwerk-inbox";
 const STORE_NAME = "messages";
 const MAX_MESSAGES = 40;
@@ -34,12 +34,18 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
+  const requestUrl = new URL(request.url);
 
   if (request.method !== "GET") {
     return;
   }
 
-  if (new URL(request.url).pathname.endsWith("/app-config.js")) {
+  if (requestUrl.pathname.endsWith("/app-config.js")) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  if (requestUrl.origin !== self.location.origin || requestUrl.pathname.includes("/functions/v1/push-api/")) {
     event.respondWith(fetch(request));
     return;
   }

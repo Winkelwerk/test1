@@ -864,7 +864,9 @@
     setMenuState("Menue wird geladen ...", false);
 
     try {
-      const response = await fetch(normalizeApiBaseUrl() + "/menu");
+      const response = await fetch(normalizeApiBaseUrl() + "/menu", {
+        cache: "no-store"
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
