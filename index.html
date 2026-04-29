@@ -7,11 +7,38 @@
   <meta name="apple-mobile-web-app-title" content="Winkelwerk">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2b2b2b">
+  <meta name="color-scheme" content="light dark">
   <title>Winkelwerk</title>
   <link rel="icon" type="image/png" href="winkelwerlk.png">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
 
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="app-config.js"></script>
+  <script>
+    (function () {
+      function handleHashRoute() {
+        const routes = {
+          "#admin": "./admin/",
+          "#inbox": "./inbox/"
+        };
+        const target = routes[String(window.location.hash || "").toLowerCase()];
+
+        if (!target) {
+          return;
+        }
+
+        const destination = new URL(target, window.location.href).href;
+
+        if (destination !== window.location.href) {
+          window.location.replace(destination);
+        }
+      }
+
+      handleHashRoute();
+      window.addEventListener("hashchange", handleHashRoute);
+    })();
+  </script>
   <script>
     (function () {
       emailjs.init("QUSJfkrSX2GOcqydg");
@@ -19,6 +46,74 @@
   </script>
 
   <style>
+    :root {
+      color-scheme: light;
+      --page-bg: #ffffff;
+      --text-color: #1f1f1f;
+      --menu-icon-bg: rgba(0, 0, 0, 0.7);
+      --menu-icon-color: #ffffff;
+      --nav-bg: rgba(0, 0, 0, 0.95);
+      --nav-link-color: #ffffff;
+      --nav-border: rgba(255, 255, 255, 0.1);
+      --nav-muted: rgba(255, 255, 255, 0.68);
+      --toggle-bg: rgba(255, 255, 255, 0.88);
+      --toggle-color: #161616;
+      --toggle-border: rgba(0, 0, 0, 0.08);
+      --btn-bg: #ff4d4d;
+      --btn-bg-hover: #ef3e3e;
+      --card-bg: #ffffff;
+      --card-text: #1f1f1f;
+      --card-shadow: rgba(0, 0, 0, 0.1);
+      --field-bg: #ffffff;
+      --field-color: #1f1f1f;
+      --field-border: #d0d0d0;
+      --placeholder-color: #7b7b7b;
+      --footer-bg: #111111;
+      --footer-text: #ffffff;
+      --hero-panel-bg: rgba(0, 0, 0, 0.18);
+      --hero-panel-shadow: rgba(0, 0, 0, 0.24);
+      --hero-fade-1: rgba(12, 12, 12, 0.46);
+      --hero-fade-2: rgba(12, 12, 12, 0.42);
+      --hero-fade-3: rgba(12, 12, 12, 0.18);
+      --hero-fade-4: rgba(255, 255, 255, 0.18);
+      --hero-fade-5: rgba(255, 255, 255, 0.72);
+      --hero-fade-6: #ffffff;
+      --hero-glow: rgba(255, 255, 255, 0.08);
+    }
+
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --page-bg: #0f1013;
+      --text-color: #f3f4f6;
+      --menu-icon-bg: rgba(14, 15, 18, 0.82);
+      --menu-icon-color: #ffffff;
+      --nav-bg: rgba(8, 8, 10, 0.95);
+      --nav-link-color: #ffffff;
+      --nav-border: rgba(255, 255, 255, 0.08);
+      --nav-muted: rgba(255, 255, 255, 0.62);
+      --toggle-bg: rgba(15, 16, 19, 0.9);
+      --toggle-color: #f5f5f5;
+      --toggle-border: rgba(255, 255, 255, 0.12);
+      --card-bg: #17191d;
+      --card-text: #f3f4f6;
+      --card-shadow: rgba(0, 0, 0, 0.35);
+      --field-bg: #111318;
+      --field-color: #f3f4f6;
+      --field-border: #31343b;
+      --placeholder-color: #9ca3af;
+      --footer-bg: #090a0c;
+      --footer-text: #ffffff;
+      --hero-panel-bg: rgba(6, 7, 10, 0.34);
+      --hero-panel-shadow: rgba(0, 0, 0, 0.42);
+      --hero-fade-1: rgba(10, 10, 10, 0.58);
+      --hero-fade-2: rgba(10, 10, 10, 0.48);
+      --hero-fade-3: rgba(10, 10, 10, 0.24);
+      --hero-fade-4: rgba(15, 16, 19, 0.16);
+      --hero-fade-5: rgba(15, 16, 19, 0.72);
+      --hero-fade-6: #0f1013;
+      --hero-glow: rgba(255, 255, 255, 0.04);
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -27,8 +122,25 @@
     }
 
     body {
-      background: #ffffff;
-      color: #1f1f1f;
+      background: var(--page-bg);
+      color: var(--text-color);
+      transition: background-color 0.35s ease, color 0.35s ease;
+    }
+
+    .menu-icon,
+    .theme-toggle,
+    nav,
+    .card,
+    footer,
+    form input,
+    form textarea,
+    .hero-content {
+      transition:
+        background-color 0.35s ease,
+        color 0.35s ease,
+        border-color 0.35s ease,
+        box-shadow 0.35s ease,
+        transform 0.2s ease;
     }
 
     .menu-icon {
@@ -38,10 +150,31 @@
       font-size: 30px;
       cursor: pointer;
       z-index: 2000;
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
+      background: var(--menu-icon-bg);
+      color: var(--menu-icon-color);
       padding: 6px 12px;
       border-radius: 8px;
+      backdrop-filter: blur(8px);
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      min-width: 130px;
+      padding: 10px 16px;
+      border: 1px solid var(--toggle-border);
+      border-radius: 999px;
+      background: var(--toggle-bg);
+      color: var(--toggle-color);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      backdrop-filter: blur(12px);
     }
 
     nav {
@@ -50,12 +183,13 @@
       left: -260px;
       width: 250px;
       height: 100vh;
-      background: rgba(0, 0, 0, 0.95);
+      background: var(--nav-bg);
       display: flex;
       flex-direction: column;
       padding-top: 80px;
-      transition: 0.3s;
+      transition: left 0.3s ease, background-color 0.35s ease;
       z-index: 1500;
+      backdrop-filter: blur(12px);
     }
 
     nav.open {
@@ -63,22 +197,104 @@
     }
 
     @media (hover: hover) {
-      .menu-icon:hover + nav,
+      .menu-icon:hover ~ nav,
       nav:hover {
         left: 0;
       }
     }
 
     nav a {
-      color: white;
+      color: var(--nav-link-color);
       padding: 15px 20px;
       text-decoration: none;
       font-weight: bold;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid var(--nav-border);
     }
 
     nav a:hover {
-      background: #ff4d4d;
+      background: var(--btn-bg);
+    }
+
+    .nav-divider {
+      margin: 22px 20px 16px;
+      border-top: 1px solid var(--nav-border);
+    }
+
+    .notify-toggle {
+      margin: 0 14px;
+      padding: 14px 14px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--nav-link-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      text-align: left;
+      backdrop-filter: blur(10px);
+    }
+
+    .notify-toggle:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .notify-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .notify-title {
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    .notify-status {
+      color: var(--nav-muted);
+      font-size: 13px;
+    }
+
+    .notify-switch {
+      position: relative;
+      width: 48px;
+      height: 28px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.2);
+      flex: 0 0 auto;
+    }
+
+    .notify-switch::after {
+      content: "";
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #ffffff;
+      transition: transform 0.25s ease, background-color 0.25s ease;
+    }
+
+    .notify-toggle[data-state="on"] .notify-switch {
+      background: var(--btn-bg);
+    }
+
+    .notify-toggle[data-state="on"] .notify-switch::after {
+      transform: translateX(20px);
+    }
+
+    .notify-toggle[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .notify-hint {
+      margin: 12px 20px 0;
+      color: var(--nav-muted);
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     header {
@@ -111,24 +327,25 @@
       background:
         linear-gradient(
           to bottom,
-          rgba(12, 12, 12, 0.46) 0%,
-          rgba(12, 12, 12, 0.42) 48%,
-          rgba(12, 12, 12, 0.18) 68%,
-          rgba(255, 255, 255, 0.18) 82%,
-          rgba(255, 255, 255, 0.72) 92%,
-          #ffffff 100%
+          var(--hero-fade-1) 0%,
+          var(--hero-fade-2) 48%,
+          var(--hero-fade-3) 68%,
+          var(--hero-fade-4) 82%,
+          var(--hero-fade-5) 92%,
+          var(--hero-fade-6) 100%
         ),
-        radial-gradient(circle at center, rgba(255, 255, 255, 0.08), transparent 55%);
+        radial-gradient(circle at center, var(--hero-glow), transparent 55%);
       z-index: -1;
+      transition: background 0.35s ease;
     }
 
     .hero-content {
       width: min(92vw, 760px);
       padding: 36px 28px;
       border-radius: 28px;
-      background: rgba(0, 0, 0, 0.18);
+      background: var(--hero-panel-bg);
       backdrop-filter: blur(4px);
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.24);
+      box-shadow: 0 24px 60px var(--hero-panel-shadow);
     }
 
     header h1 {
@@ -145,7 +362,7 @@
     }
 
     .btn {
-      background: #ff4d4d;
+      background: var(--btn-bg);
       color: white;
       padding: 12px 25px;
       border: none;
@@ -154,9 +371,19 @@
       font-size: 16px;
     }
 
+    .btn:hover,
+    .theme-toggle:hover {
+      background: var(--btn-bg-hover);
+      color: white;
+    }
+
     section {
       padding: 60px 20px;
       text-align: center;
+    }
+
+    section h2 {
+      margin-bottom: 20px;
     }
 
     .menu {
@@ -166,11 +393,11 @@
     }
 
     .card {
-      background: white;
+      background: var(--card-bg);
+      color: var(--card-text);
       padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s;
+      box-shadow: 0 4px 10px var(--card-shadow);
     }
 
     .card:hover {
@@ -186,8 +413,8 @@
     }
 
     footer {
-      background: #111;
-      color: white;
+      background: var(--footer-bg);
+      color: var(--footer-text);
       padding: 20px;
       text-align: center;
     }
@@ -198,7 +425,20 @@
       padding: 10px;
       margin: 10px;
       border-radius: 6px;
-      border: 1px solid #ccc;
+      border: 1px solid var(--field-border);
+      background: var(--field-bg);
+      color: var(--field-color);
+    }
+
+    form input::placeholder,
+    form textarea::placeholder {
+      color: var(--placeholder-color);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .theme-toggle {
+        display: inline-flex;
+      }
     }
 
     @media (max-width: 768px) {
@@ -231,12 +471,23 @@
 <body>
 
 <div class="menu-icon" onclick="toggleMenu()">&#9776;</div>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Zum Dunkelmodus wechseln">Dunkelmodus</button>
 
 <nav id="sideMenu">
   <a href="#home" onclick="toggleMenu()">Startseite</a>
   <a href="#menu" onclick="toggleMenu()">Men&uuml;</a>
   <a href="#about" onclick="toggleMenu()">&Uuml;ber uns</a>
   <a href="#contact" onclick="toggleMenu()">Kontakt</a>
+  <a href="./inbox/" onclick="toggleMenu()">Postfach</a>
+  <div class="nav-divider"></div>
+  <button class="notify-toggle" id="notifyToggle" type="button" data-state="off" aria-pressed="false">
+    <span class="notify-copy">
+      <span class="notify-title">Push-Hinweise</span>
+      <span class="notify-status" id="notifyStatus">Aus</span>
+    </span>
+    <span class="notify-switch" aria-hidden="true"></span>
+  </button>
+  <p class="notify-hint" id="notifyHint">Aktiviert Browser-Benachrichtigungen f&uuml;r Winkelwerk.</p>
 </nav>
 
 <header id="home">
@@ -284,6 +535,52 @@
 </footer>
 
 <script>
+  const root = document.documentElement;
+  const appConfig = window.WINKELWERK_APP_CONFIG || {};
+  const themeToggle = document.getElementById("themeToggle");
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  const storageKey = "winkelwerk-desktop-theme";
+  const notificationKey = "winkelwerk-notifications-enabled";
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+  const notifyToggle = document.getElementById("notifyToggle");
+  const notifyStatus = document.getElementById("notifyStatus");
+  const notifyHint = document.getElementById("notifyHint");
+  const inboxUrl = new URL("./inbox/", window.location.href).href;
+  let serviceWorkerRegistrationPromise;
+
+  function isDesktopDevice() {
+    return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  }
+
+  function getSystemTheme() {
+    return prefersDark.matches ? "dark" : "light";
+  }
+
+  function applyTheme(theme) {
+    const nextModeLabel = theme === "dark" ? "Hellmodus" : "Dunkelmodus";
+
+    root.setAttribute("data-theme", theme);
+
+    if (themeMeta) {
+      themeMeta.setAttribute("content", theme === "dark" ? "#0f1013" : "#ffffff");
+    }
+
+    if (themeToggle) {
+      themeToggle.textContent = nextModeLabel;
+      themeToggle.setAttribute("aria-label", "Zum " + nextModeLabel + " wechseln");
+    }
+  }
+
+  function syncThemeWithDevice() {
+    if (isDesktopDevice()) {
+      const savedTheme = localStorage.getItem(storageKey);
+      applyTheme(savedTheme || getSystemTheme());
+      return;
+    }
+
+    applyTheme(getSystemTheme());
+  }
+
   function toggleMenu() {
     if (window.matchMedia("(hover: hover)").matches) {
       return;
@@ -291,6 +588,286 @@
 
     document.getElementById("sideMenu").classList.toggle("open");
   }
+
+  function notificationsSupported() {
+    return window.isSecureContext
+      && typeof Notification !== "undefined"
+      && "serviceWorker" in navigator
+      && "PushManager" in window;
+  }
+
+  function pushConfigReady() {
+    return Boolean(appConfig.pushApiBaseUrl && appConfig.vapidPublicKey);
+  }
+
+  function notificationsEnabled() {
+    return localStorage.getItem(notificationKey) === "on";
+  }
+
+  function normalizeApiBaseUrl() {
+    return String(appConfig.pushApiBaseUrl || "").replace(/\/+$/, "");
+  }
+
+  function vapidKeyToUint8Array(base64String) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const safeBase64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const raw = window.atob(safeBase64);
+    const output = new Uint8Array(raw.length);
+
+    for (let index = 0; index < raw.length; index += 1) {
+      output[index] = raw.charCodeAt(index);
+    }
+
+    return output;
+  }
+
+  async function getServiceWorkerRegistration() {
+    if (!notificationsSupported()) {
+      return null;
+    }
+
+    if (!serviceWorkerRegistrationPromise) {
+      serviceWorkerRegistrationPromise = navigator.serviceWorker.register("./service-worker.js", {
+        scope: "./"
+      });
+    }
+
+    return serviceWorkerRegistrationPromise;
+  }
+
+  async function postPushJson(path, payload) {
+    const response = await fetch(normalizeApiBaseUrl() + path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Push request failed");
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    return contentType.includes("application/json") ? response.json() : null;
+  }
+
+  async function getCurrentPushSubscription() {
+    if (!notificationsSupported()) {
+      return null;
+    }
+
+    const registration = await getServiceWorkerRegistration();
+    return registration ? registration.pushManager.getSubscription() : null;
+  }
+
+  async function saveInboxMessage(payload) {
+    if (!("serviceWorker" in navigator)) {
+      return;
+    }
+
+    const registration = await getServiceWorkerRegistration();
+
+    if (registration && registration.active) {
+      registration.active.postMessage({
+        type: "SAVE_INBOX_MESSAGE",
+        payload
+      });
+    }
+  }
+
+  function setNotificationUi(mode, statusText, hintHtml) {
+    if (!notifyToggle || !notifyStatus || !notifyHint) {
+      return;
+    }
+
+    notifyToggle.dataset.state = mode === "on" ? "on" : "off";
+    notifyToggle.setAttribute("aria-pressed", mode === "on" ? "true" : "false");
+    notifyStatus.textContent = statusText;
+    notifyHint.innerHTML = hintHtml;
+  }
+
+  async function updateNotificationUi() {
+    if (!notifyToggle || !notifyStatus || !notifyHint) {
+      return;
+    }
+
+    if (!notificationsSupported()) {
+      notifyToggle.disabled = true;
+      setNotificationUi(
+        "off",
+        "Nicht verfuegbar",
+        "Push braucht HTTPS, Service Worker und einen unterst&uuml;tzten Browser."
+      );
+      return;
+    }
+
+    if (!pushConfigReady()) {
+      notifyToggle.disabled = true;
+      setNotificationUi(
+        "off",
+        "Setup fehlt",
+        "Trage zuerst die Backend-URL und den VAPID-Key in <code>app-config.js</code> ein."
+      );
+      return;
+    }
+
+    const subscription = await getCurrentPushSubscription();
+    const enabled = Boolean(subscription) && Notification.permission === "granted";
+    localStorage.setItem(notificationKey, enabled ? "on" : "off");
+    notifyToggle.disabled = false;
+
+    if (enabled) {
+      setNotificationUi(
+        "on",
+        "An",
+        "Interne Hinweise sind aktiv. Neue Nachrichten landen auch im <a href=\"./inbox/\">Postfach</a>."
+      );
+      return;
+    }
+
+    if (Notification.permission === "denied") {
+      setNotificationUi(
+        "off",
+        "Blockiert",
+        "Der Browser blockiert Push. Erlaube Benachrichtigungen in den Browser-Einstellungen."
+      );
+      return;
+    }
+
+    setNotificationUi(
+      "off",
+      "Aus",
+      "Aktiviert Web-Push f&uuml;r interne Winkelwerk-Nachrichten auf diesem Ger&auml;t."
+    );
+  }
+
+  async function enableNotifications() {
+    if (!notificationsSupported()) {
+      await updateNotificationUi();
+      return;
+    }
+
+    if (!pushConfigReady()) {
+      await updateNotificationUi();
+      return;
+    }
+
+    let permission = Notification.permission;
+
+    if (permission !== "granted") {
+      permission = await Notification.requestPermission();
+    }
+
+    if (permission !== "granted") {
+      localStorage.setItem(notificationKey, "off");
+      await updateNotificationUi();
+      return;
+    }
+
+    try {
+      const registration = await getServiceWorkerRegistration();
+      let subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: vapidKeyToUint8Array(String(appConfig.vapidPublicKey))
+        });
+      }
+
+      await postPushJson("/subscribe", {
+        subscription: subscription.toJSON(),
+        site: window.location.origin,
+        page: window.location.pathname,
+        userAgent: navigator.userAgent
+      });
+
+      localStorage.setItem(notificationKey, "on");
+      await saveInboxMessage({
+        id: "local-" + Date.now(),
+        title: "Winkelwerk",
+        body: "Push ist jetzt auf diesem Geraet aktiviert.",
+        url: inboxUrl,
+        sentAt: new Date().toISOString(),
+        source: "system"
+      });
+
+      await registration.showNotification("Winkelwerk", {
+        body: "Push ist jetzt auf diesem Geraet aktiviert.",
+        icon: "./apple-touch-icon.png",
+        badge: "./icon-192.png",
+        data: {
+          url: inboxUrl
+        }
+      });
+    } catch (error) {
+      console.log(error);
+      localStorage.setItem(notificationKey, "off");
+      setNotificationUi(
+        "off",
+        "Fehler",
+        "Die Push-Anmeldung hat nicht funktioniert. Pr&uuml;fe Backend, VAPID-Key und HTTPS."
+      );
+      return;
+    }
+
+    await updateNotificationUi();
+  }
+
+  async function disableNotifications() {
+    try {
+      const subscription = await getCurrentPushSubscription();
+
+      if (subscription) {
+        await postPushJson("/unsubscribe", {
+          endpoint: subscription.endpoint
+        });
+
+        await subscription.unsubscribe();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+
+    localStorage.setItem(notificationKey, "off");
+    await updateNotificationUi();
+  }
+
+  themeToggle.addEventListener("click", function () {
+    const nextTheme = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    localStorage.setItem(storageKey, nextTheme);
+    applyTheme(nextTheme);
+  });
+
+  notifyToggle.addEventListener("click", async function () {
+    if (notificationsEnabled()) {
+      await disableNotifications();
+      return;
+    }
+
+    await enableNotifications();
+  });
+
+  function handleSystemThemeChange() {
+    if (!isDesktopDevice() || !localStorage.getItem(storageKey)) {
+      applyTheme(getSystemTheme());
+    }
+  }
+
+  if (typeof prefersDark.addEventListener === "function") {
+    prefersDark.addEventListener("change", handleSystemThemeChange);
+  } else if (typeof prefersDark.addListener === "function") {
+    prefersDark.addListener(handleSystemThemeChange);
+  }
+
+  window.addEventListener("resize", syncThemeWithDevice);
+  window.addEventListener("focus", function () {
+    updateNotificationUi();
+  });
+  syncThemeWithDevice();
+  updateNotificationUi();
 
   document.getElementById("contact-form").addEventListener("submit", function (e) {
     e.preventDefault();

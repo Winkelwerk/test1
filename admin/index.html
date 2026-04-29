@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#101114">
+  <meta name="color-scheme" content="light dark">
+  <title>Winkelwerk Admin</title>
+  <link rel="icon" type="image/png" href="../winkelwerlk.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <script src="../app-config.js"></script>
+
+  <style>
+    :root {
+      color-scheme: dark light;
+      --bg: #f7f4ef;
+      --panel: rgba(255, 255, 255, 0.9);
+      --panel-strong: #ffffff;
+      --text: #181818;
+      --muted: #6f6a63;
+      --border: rgba(0, 0, 0, 0.08);
+      --accent: #ff4d4d;
+      --accent-hover: #ea3c3c;
+      --shadow: rgba(0, 0, 0, 0.14);
+      --field-bg: #ffffff;
+      --field-border: #d9d3ca;
+      --success: #0f8f58;
+      --error: #c0392b;
+      --warning: #9a6700;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1013;
+        --panel: rgba(22, 24, 29, 0.9);
+        --panel-strong: #17191d;
+        --text: #f3f4f6;
+        --muted: #a8afb8;
+        --border: rgba(255, 255, 255, 0.09);
+        --shadow: rgba(0, 0, 0, 0.38);
+        --field-bg: #101217;
+        --field-border: #2c3038;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top, rgba(255, 77, 77, 0.14), transparent 30%),
+        linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.08)),
+        var(--bg);
+      color: var(--text);
+      padding: 28px 16px;
+    }
+
+    .shell {
+      width: min(100%, 980px);
+      margin: 0 auto;
+    }
+
+    .gate-panel,
+    .admin-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      box-shadow: 0 28px 60px var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .gate-panel {
+      width: min(100%, 520px);
+      margin: 8vh auto 0;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .brand {
+      width: min(280px, 70%);
+      display: block;
+      margin: 0 auto 22px;
+      border-radius: 18px;
+    }
+
+    h1 {
+      font-size: clamp(32px, 5vw, 46px);
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      font-size: clamp(24px, 3vw, 34px);
+      margin-bottom: 10px;
+    }
+
+    p {
+      line-height: 1.55;
+    }
+
+    .lead {
+      color: var(--muted);
+      margin-bottom: 22px;
+    }
+
+    form {
+      display: grid;
+      gap: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      text-align: left;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 14px 15px;
+      border-radius: 14px;
+      border: 1px solid var(--field-border);
+      background: var(--field-bg);
+      color: var(--text);
+      font-size: 15px;
+    }
+
+    textarea {
+      min-height: 180px;
+      resize: vertical;
+    }
+
+    .btn,
+    .ghost-btn {
+      border: none;
+      border-radius: 14px;
+      padding: 14px 18px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.18s ease, background-color 0.18s ease, opacity 0.18s ease;
+    }
+
+    .btn {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn:hover,
+    .btn:focus-visible {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .ghost-btn {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .ghost-btn:hover,
+    .ghost-btn:focus-visible {
+      background: rgba(127, 127, 127, 0.09);
+    }
+
+    .status {
+      min-height: 22px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .status.success {
+      color: var(--success);
+    }
+
+    .status.error {
+      color: var(--error);
+    }
+
+    .status.warning {
+      color: var(--warning);
+    }
+
+    .admin-panel {
+      display: none;
+      padding: 26px;
+    }
+
+    .admin-panel.is-open {
+      display: block;
+    }
+
+    .admin-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 22px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .admin-kicker {
+      color: var(--muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 6px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .hint-box {
+      margin-top: 20px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255, 77, 77, 0.08);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 18px 12px;
+      }
+
+      .gate-panel,
+      .admin-panel {
+        border-radius: 22px;
+      }
+
+      .gate-panel {
+        padding: 22px 18px;
+      }
+
+      .admin-panel {
+        padding: 18px;
+      }
+
+      .admin-topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="shell">
+    <section class="gate-panel" id="gatePanel">
+      <img class="brand" src="../winkelwerlk.png" alt="Winkelwerk">
+      <h1>Admin-Zugang</h1>
+      <p class="lead">Diese Seite ist nur mit dem richtigen Code zug&auml;nglich.</p>
+
+      <form id="gateForm">
+        <label>
+          Zugangscode
+          <input id="accessCode" type="password" placeholder="Code eingeben" autocomplete="current-password" required>
+        </label>
+        <button class="btn" type="submit">Adminbereich &ouml;ffnen</button>
+        <p class="status" id="gateStatus"></p>
+      </form>
+    </section>
+
+    <section class="admin-panel" id="adminPanel">
+      <div class="admin-topbar">
+        <div>
+          <p class="admin-kicker">Winkelwerk Intern</p>
+          <h2>Nachrichten senden</h2>
+          <p class="lead">Von hier sendest du interne Website-Nachrichten an alle Geraete mit aktivem Winkelwerk-Push.</p>
+        </div>
+        <button class="ghost-btn" id="lockAdmin" type="button">Abmelden</button>
+      </div>
+
+      <form id="adminMessageForm">
+        <div class="grid">
+          <label>
+            Titel
+            <input type="text" name="title" placeholder="z. B. Neue Wochenkarte" required>
+          </label>
+
+          <label>
+            Button / Ziel-Link
+            <input type="text" name="target_url" placeholder="../inbox/ oder https://..." value="../inbox/" required>
+          </label>
+        </div>
+
+        <label>
+          Nachricht
+          <textarea name="message_text" placeholder="Deine interne Nachricht..." required></textarea>
+        </label>
+
+        <button class="btn" type="submit">Nachricht senden</button>
+        <p class="status" id="messageStatus"></p>
+      </form>
+
+      <div class="hint-box">
+        Diese Seite sendet echte Web-Push-Nachrichten ueber dein Backend. Der sichtbare Zugangsschutz ist clientseitig, die eigentliche Sendefreigabe laeuft ueber denselben Admin-Code auf dem Backend.
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const appConfig = window.WINKELWERK_APP_CONFIG || {};
+    const ACCESS_CODE_HASH = appConfig.adminCodeHash || "6209c99de88145d6dfd861fa1805e7e7cd1c7a1084d79f080f9dc5c8cf973a6e";
+    const API_BASE = String(appConfig.pushApiBaseUrl || "").replace(/\/+$/, "");
+    const gateForm = document.getElementById("gateForm");
+    const gatePanel = document.getElementById("gatePanel");
+    const adminPanel = document.getElementById("adminPanel");
+    const gateStatus = document.getElementById("gateStatus");
+    const accessCode = document.getElementById("accessCode");
+    const lockAdmin = document.getElementById("lockAdmin");
+    const adminMessageForm = document.getElementById("adminMessageForm");
+    const messageStatus = document.getElementById("messageStatus");
+    let currentAdminCode = "";
+
+    function setStatus(target, message, type) {
+      target.textContent = message;
+      target.className = "status" + (type ? " " + type : "");
+    }
+
+    async function sha256(value) {
+      const buffer = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+      return Array.from(new Uint8Array(buffer))
+        .map((part) => part.toString(16).padStart(2, "0"))
+        .join("");
+    }
+
+    function openAdminPanel() {
+      gatePanel.classList.add("hidden");
+      adminPanel.classList.add("is-open");
+    }
+
+    function lockAdminPanel() {
+      currentAdminCode = "";
+      adminPanel.classList.remove("is-open");
+      gatePanel.classList.remove("hidden");
+      accessCode.value = "";
+      setStatus(gateStatus, "", "");
+      setStatus(messageStatus, "", "");
+    }
+
+    function backendConfigured() {
+      return Boolean(API_BASE);
+    }
+
+    async function postJson(path, payload) {
+      const response = await fetch(API_BASE + path, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-code": currentAdminCode
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Request failed");
+      }
+
+      return response.json();
+    }
+
+    gateForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      setStatus(gateStatus, "Code wird gepr&uuml;ft ...", "");
+
+      try {
+        const trimmedCode = accessCode.value.trim();
+        const submittedHash = await sha256(trimmedCode);
+
+        if (submittedHash === ACCESS_CODE_HASH) {
+          currentAdminCode = trimmedCode;
+          setStatus(gateStatus, "Zugang gew&auml;hrt.", "success");
+          openAdminPanel();
+          if (!backendConfigured()) {
+            setStatus(messageStatus, "Backend fehlt: Trage zuerst die Push-API in app-config.js ein.", "warning");
+          }
+          return;
+        }
+
+        setStatus(gateStatus, "Falscher Code.", "error");
+      } catch (error) {
+        console.log(error);
+        setStatus(gateStatus, "Der Code konnte gerade nicht gepr&uuml;ft werden.", "error");
+      }
+    });
+
+    lockAdmin.addEventListener("click", function () {
+      lockAdminPanel();
+    });
+
+    adminMessageForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      if (!currentAdminCode) {
+        setStatus(messageStatus, "Bitte entsperre den Adminbereich erneut mit dem Code.", "warning");
+        return;
+      }
+
+      if (!backendConfigured()) {
+        setStatus(messageStatus, "app-config.js ist noch nicht mit deinem Backend verbunden.", "warning");
+        return;
+      }
+
+      setStatus(messageStatus, "Interne Nachricht wird gesendet ...", "");
+
+      const formData = new FormData(adminMessageForm);
+      const title = String(formData.get("title") || "").trim();
+      const messageText = String(formData.get("message_text") || "").trim();
+      const targetUrl = String(formData.get("target_url") || "../inbox/").trim();
+
+      try {
+        const result = await postJson("/send", {
+          title,
+          body: messageText,
+          url: new URL(targetUrl, window.location.href).href
+        });
+
+        const sentCount = typeof result.sentCount === "number" ? result.sentCount : 0;
+        setStatus(messageStatus, "Nachricht erfolgreich an " + sentCount + " Geraet(e) gesendet.", "success");
+        adminMessageForm.reset();
+        adminMessageForm.elements.target_url.value = "../inbox/";
+      } catch (error) {
+        console.log(error);
+        setStatus(messageStatus, "Senden fehlgeschlagen. Pruefe Backend, Code und Push-Abos.", "error");
+      }
+    });
+  </script>
+</body>
+</html>
