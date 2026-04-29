@@ -13,6 +13,7 @@ const adminCodeHash = Deno.env.get("ADMIN_CODE_HASH") ?? "";
 const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
 const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
 const vapidContactEmail = Deno.env.get("VAPID_CONTACT_EMAIL") ?? "admin@example.com";
+const defaultMaintenanceMessage = "Website wird gerade bearbeitet. Bitte spaeter erneut versuchen.";
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.warn("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing.");
@@ -89,6 +90,14 @@ function mapMenuItem(record: Record<string, any>) {
   };
 }
 
+function mapSiteSettings(record?: Record<string, any> | null) {
+  return {
+    maintenanceMode: Boolean(record?.maintenance_mode),
+    maintenanceMessage: normalizeText(record?.maintenance_message) || defaultMaintenanceMessage,
+    updatedAt: record?.updated_at ?? null
+  };
+}
+
 async function validateAdminRequest(request: Request) {
   const incomingCode = normalizeText(request.headers.get("x-admin-code"));
 
@@ -139,6 +148,20 @@ async function getNextMenuSortOrder() {
   return Number(data?.[0]?.sort_order ?? -1) + 1;
 }
 
+async function getSiteSettings() {
+  const { data, error } = await supabase
+    .from("site_settings")
+    .select("*")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return mapSiteSettings(data);
+}
+
 function ensureSubscription(body: any) {
   const subscription = body?.subscription;
 
@@ -168,6 +191,15 @@ Deno.serve(async (request) => {
 
       const items = await listMenuItems(false);
       return jsonResponse({ ok: true, items });
+    }
+
+    if (action === "site-settings") {
+      if (request.method !== "GET") {
+        return jsonResponse({ error: "Method not allowed." }, 405);
+      }
+
+      const settings = await getSiteSettings();
+      return jsonResponse({ ok: true, settings });
     }
 
     if (action === "menu-admin") {
@@ -289,6 +321,43 @@ Deno.serve(async (request) => {
       }
 
       return jsonResponse({ error: "Unknown admin menu operation." }, 400);
+    }
+
+    if (action === "site-settings-admin") {
+      const adminError = await validateAdminRequest(request);
+
+      if (adminError) {
+        return adminError;
+      }
+
+      if (request.method === "GET") {
+        const settings = await getSiteSettings();
+        return jsonResponse({ ok: true, settings });
+      }
+
+      const body = await request.json();
+      const maintenanceMode = normalizeBoolean(body?.maintenanceMode);
+      const maintenanceMessage = normalizeText(body?.maintenanceMessage) || defaultMaintenanceMessage;
+
+      const result = await supabase
+        .from("site_settings")
+        .upsert({
+          id: 1,
+          maintenance_mode: maintenanceMode,
+          maintenance_message: maintenanceMessage,
+          updated_at: new Date().toISOString()
+        })
+        .select("*")
+        .single();
+
+      if (result.error || !result.data) {
+        throw result.error ?? new Error("Site settings save failed.");
+      }
+
+      return jsonResponse({
+        ok: true,
+        settings: mapSiteSettings(result.data)
+      });
     }
 
     if (request.method !== "POST") {

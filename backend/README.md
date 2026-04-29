@@ -21,11 +21,16 @@ Offizielle Infos:
 
 - `supabase/migrations/20260427_push.sql`
   Das Datenbankschema fuer Push-Abos, interne Nachrichten und das Website-Menue
+- `supabase/migrations/20260429_site_settings.sql`
+  Das Datenbankschema fuer globale Website-Einstellungen wie Wartungsmodus
 - `supabase/functions/push-api/index.ts`
   Die HTTP-API fuer
   - `GET /menu`
+  - `GET /site-settings`
   - `GET /menu-admin`
+  - `GET /site-settings-admin`
   - `POST /menu-admin`
+  - `POST /site-settings-admin`
   - `POST /subscribe`
   - `POST /unsubscribe`
   - `POST /send`

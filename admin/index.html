@@ -256,6 +256,13 @@
       background: var(--panel-strong);
     }
 
+    .settings-card {
+      padding: 20px;
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: var(--panel-strong);
+    }
+
     .menu-library-topbar {
       display: flex;
       align-items: center;
@@ -474,6 +481,26 @@
 
       <div class="admin-section">
         <div class="section-head">
+          <p class="admin-kicker">Website Status</p>
+          <h3>Wartungsmodus</h3>
+          <p class="lead">Wenn der Wartungsmodus aktiv ist, sieht die Hauptseite statt des Inhalts einen grossen Hinweis, dass die Website gerade bearbeitet wird. Der Adminbereich bleibt weiter erreichbar.</p>
+        </div>
+
+        <div class="settings-card">
+          <form id="siteSettingsForm">
+            <label class="check-field">
+              <input type="checkbox" name="maintenance_mode">
+              <span>Wartungsmodus auf der Hauptseite aktivieren</span>
+            </label>
+
+            <button class="btn" type="submit">Status speichern</button>
+            <p class="status" id="siteSettingsStatus"></p>
+          </form>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="section-head">
           <p class="admin-kicker">Website Inhalt</p>
           <h3>Modulares Men&uuml; verwalten</h3>
           <p class="lead">Gerichte anlegen, bearbeiten, ausblenden oder in der Reihenfolge verschieben. Die Website laedt diese Eintr&auml;ge automatisch aus dem Backend.</p>
@@ -578,6 +605,8 @@
     const menuEditorTitle = document.getElementById("menuEditorTitle");
     const menuResetButton = document.getElementById("menuResetButton");
     const refreshMenuItems = document.getElementById("refreshMenuItems");
+    const siteSettingsForm = document.getElementById("siteSettingsForm");
+    const siteSettingsStatus = document.getElementById("siteSettingsStatus");
     let currentAdminCode = "";
     let menuItems = [];
 
@@ -632,6 +661,17 @@
 
     function compareMenuItems(a, b) {
       return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+    }
+
+    function normalizeSiteSettings(settings) {
+      return {
+        maintenanceMode: Boolean(settings && settings.maintenanceMode),
+        maintenanceMessage: String(
+          settings && settings.maintenanceMessage
+            ? settings.maintenanceMessage
+            : "Website wird gerade bearbeitet. Bitte spaeter erneut versuchen."
+        ).trim() || "Website wird gerade bearbeitet. Bitte spaeter erneut versuchen."
+      };
     }
 
     function normalizeMenuItem(item) {
@@ -833,8 +873,66 @@
       setStatus(gateStatus, "", "");
       setStatus(messageStatus, "", "");
       setStatus(menuListStatus, "", "");
+      setStatus(siteSettingsStatus, "", "");
+      siteSettingsForm.reset();
       resetMenuForm();
       renderMenuAdminList();
+    }
+
+    async function loadSiteSettingsAdmin(options) {
+      const silent = options && options.silent;
+
+      if (!backendConfigured() || !currentAdminCode) {
+        return;
+      }
+
+      if (!silent) {
+        setStatus(siteSettingsStatus, "Status wird geladen ...", "");
+      }
+
+      try {
+        const result = await requestJson("/site-settings-admin");
+        const settings = normalizeSiteSettings(result && result.settings ? result.settings : {});
+        siteSettingsForm.elements.maintenance_mode.checked = settings.maintenanceMode;
+        setStatus(siteSettingsStatus, "Status geladen.", "success");
+      } catch (error) {
+        console.log(error);
+        setStatus(siteSettingsStatus, "Wartungsmodus konnte nicht geladen werden.", "error");
+      }
+    }
+
+    async function saveSiteSettingsAdmin() {
+      if (!currentAdminCode) {
+        setStatus(siteSettingsStatus, "Bitte entsperre den Adminbereich erneut mit dem Code.", "warning");
+        return;
+      }
+
+      if (!backendConfigured()) {
+        setStatus(siteSettingsStatus, "app-config.js ist noch nicht mit deinem Backend verbunden.", "warning");
+        return;
+      }
+
+      setStatus(siteSettingsStatus, "Status wird gespeichert ...", "");
+
+      try {
+        const result = await requestJson("/site-settings-admin", {
+          method: "POST",
+          payload: {
+            maintenanceMode: siteSettingsForm.elements.maintenance_mode.checked
+          }
+        });
+
+        const settings = normalizeSiteSettings(result && result.settings ? result.settings : {});
+        siteSettingsForm.elements.maintenance_mode.checked = settings.maintenanceMode;
+        setStatus(
+          siteSettingsStatus,
+          settings.maintenanceMode ? "Wartungsmodus aktiviert." : "Wartungsmodus deaktiviert.",
+          "success"
+        );
+      } catch (error) {
+        console.log(error);
+        setStatus(siteSettingsStatus, "Wartungsmodus konnte nicht gespeichert werden.", "error");
+      }
     }
 
     async function loadMenuItems(options) {
@@ -987,8 +1085,12 @@
           if (!backendConfigured()) {
             setStatus(messageStatus, "Backend fehlt: Trage zuerst die Push-API in app-config.js ein.", "warning");
             setStatus(menuListStatus, "Backend fehlt: Trage zuerst die Push-API in app-config.js ein.", "warning");
+            setStatus(siteSettingsStatus, "Backend fehlt: Trage zuerst die Push-API in app-config.js ein.", "warning");
           } else {
-            await loadMenuItems();
+            await Promise.all([
+              loadMenuItems(),
+              loadSiteSettingsAdmin()
+            ]);
           }
 
           return;
@@ -1051,6 +1153,11 @@
 
     refreshMenuItems.addEventListener("click", function () {
       loadMenuItems();
+    });
+
+    siteSettingsForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      await saveSiteSettingsAdmin();
     });
 
     menuItemForm.addEventListener("submit", async function (event) {
