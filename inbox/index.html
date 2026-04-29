@@ -205,7 +205,7 @@
           <img src="../winkelwerlk.png" alt="Winkelwerk">
           <div>
             <h1>Postfach</h1>
-            <p class="lead">Hier landen interne Winkelwerk-Nachrichten, die auf diesem Geraet angekommen sind.</p>
+            <p class="lead">Hier landen interne Winkelwerk-Nachrichten, die auf diesem Ger&auml;t angekommen sind.</p>
           </div>
         </div>
 
@@ -298,7 +298,7 @@
     function renderEmptyState() {
       messageList.innerHTML = [
         "<article class=\"empty-state\">",
-        "<p>Noch keine internen Nachrichten auf diesem Geraet gespeichert.</p>",
+        "<p>Noch keine internen Nachrichten auf diesem Ger&auml;t gespeichert.</p>",
         "<p>Aktiviere Push auf der Startseite und sende danach eine Nachricht aus dem Adminbereich.</p>",
         "</article>"
       ].join("");
@@ -312,7 +312,7 @@
 
       messageList.innerHTML = messages.map((message) => {
         const actionLink = message.url
-          ? "<a href=\"" + message.url + "\">Nachricht oeffnen</a>"
+          ? "<a href=\"" + message.url + "\">Nachricht &ouml;ffnen</a>"
           : "";
 
         return [

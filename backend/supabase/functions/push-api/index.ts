@@ -13,7 +13,7 @@ const adminCodeHash = Deno.env.get("ADMIN_CODE_HASH") ?? "";
 const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
 const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
 const vapidContactEmail = Deno.env.get("VAPID_CONTACT_EMAIL") ?? "admin@example.com";
-const defaultMaintenanceMessage = "Website wird gerade bearbeitet. Bitte spaeter erneut versuchen.";
+const defaultMaintenanceMessage = "Website wird gerade bearbeitet. Bitte später erneut versuchen.";
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.warn("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing.");
@@ -98,6 +98,28 @@ function mapSiteSettings(record?: Record<string, any> | null) {
   };
 }
 
+function isMissingRelationError(error: unknown, relationName: string) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const details = error as {
+    code?: string;
+    message?: string;
+    details?: string;
+    hint?: string;
+  };
+  const haystack = [details.message, details.details, details.hint]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  const normalizedRelation = relationName.toLowerCase();
+
+  return details.code === "42P01"
+    || haystack.includes(`relation "${normalizedRelation}" does not exist`)
+    || haystack.includes(`relation '${normalizedRelation}' does not exist`);
+}
+
 async function validateAdminRequest(request: Request) {
   const incomingCode = normalizeText(request.headers.get("x-admin-code"));
 
@@ -156,10 +178,20 @@ async function getSiteSettings() {
     .maybeSingle();
 
   if (error) {
+    if (isMissingRelationError(error, "site_settings")) {
+      return {
+        settings: mapSiteSettings(null),
+        storageReady: false
+      };
+    }
+
     throw error;
   }
 
-  return mapSiteSettings(data);
+  return {
+    settings: mapSiteSettings(data),
+    storageReady: true
+  };
 }
 
 function ensureSubscription(body: any) {
@@ -198,8 +230,8 @@ Deno.serve(async (request) => {
         return jsonResponse({ error: "Method not allowed." }, 405);
       }
 
-      const settings = await getSiteSettings();
-      return jsonResponse({ ok: true, settings });
+      const siteSettings = await getSiteSettings();
+      return jsonResponse({ ok: true, ...siteSettings });
     }
 
     if (action === "menu-admin") {
@@ -331,8 +363,8 @@ Deno.serve(async (request) => {
       }
 
       if (request.method === "GET") {
-        const settings = await getSiteSettings();
-        return jsonResponse({ ok: true, settings });
+        const siteSettings = await getSiteSettings();
+        return jsonResponse({ ok: true, ...siteSettings });
       }
 
       const body = await request.json();
@@ -351,6 +383,12 @@ Deno.serve(async (request) => {
         .single();
 
       if (result.error || !result.data) {
+        if (result.error && isMissingRelationError(result.error, "site_settings")) {
+          return jsonResponse({
+            error: "Die Tabelle site_settings fehlt. Bitte führe die Migration 20260429_site_settings.sql aus und deploye push-api neu."
+          }, 503);
+        }
+
         throw result.error ?? new Error("Site settings save failed.");
       }
 

@@ -19,7 +19,7 @@
     (function () {
       function handleHashRoute() {
         const routes = {
-          "#menu": "./menü/",
+          "#menu": "./men%C3%BC/",
           "#admin": "./admin/",
           "#inbox": "./inbox/"
         };
@@ -728,7 +728,7 @@
     <img src="winkelwerlk.png" alt="Winkelwerk">
     <p class="maintenance-kicker">Bitte etwas Geduld</p>
     <h2>Website wird gerade bearbeitet</h2>
-    <p id="maintenanceMessage">Bitte spaeter erneut versuchen.</p>
+    <p id="maintenanceMessage">Bitte später erneut versuchen.</p>
   </div>
 </div>
 
@@ -737,7 +737,7 @@
 
 <nav id="sideMenu">
   <a href="#home" onclick="toggleMenu()">Startseite</a>
-  <a href="./menü/" onclick="toggleMenu()">Men&uuml;</a>
+  <a href="./men%C3%BC/" onclick="toggleMenu()">Men&uuml;</a>
   <a href="#about" onclick="toggleMenu()">&Uuml;ber uns</a>
   <a href="#contact" onclick="toggleMenu()">Kontakt</a>
   <a href="#location" onclick="toggleMenu()">Standort</a>
@@ -757,7 +757,7 @@
   <div class="hero-content">
     <h1>Winkelwerk</h1>
     <p>Dein Restaurant f&uuml;r besonderen Genuss</p>
-    <button class="btn" type="button" onclick="window.location.href='./menü/'">Zum Men&uuml;</button>
+    <button class="btn" type="button" onclick="window.location.href='./men%C3%BC/'">Zum Men&uuml;</button>
   </div>
 </header>
 
@@ -786,7 +786,7 @@
   <h2>Standort</h2>
   <div class="section-shell location-layout">
     <div class="contact-panel">
-      <p>Du findest uns in Emskirchen am Altschauerberg 8. Ueber die Buttons kannst du den Standort direkt in Google Maps oeffnen oder sofort die Wegbeschreibung starten.</p>
+      <p>Du findest uns in Emskirchen am Altschauerberg 8. Über die Buttons kannst du den Standort direkt in Google Maps öffnen oder sofort die Wegbeschreibung starten.</p>
 
       <div class="contact-meta">
         <p><strong>Adresse:</strong> Altschauerberg 8, 91448 Emskirchen</p>
@@ -806,7 +806,7 @@
           href="https://www.google.com/maps/place/Altschauerberg+8,+91448+Emskirchen/@49.5334645,10.7003888,706m/data=!3m2!1e3!4b1!4m6!3m5!1s0x47a2080ff94d1295:0x3c620674f0119ff6!8m2!3d49.5334645!4d10.7029637!16s%2Fg%2F11v07xj993?entry=ttu&g_ep=EgoyMDI2MDQyNy4wIKXMDSoASAFQAw%3D%3D"
           target="_blank"
           rel="noreferrer">
-          In Google Maps oeffnen
+          In Google Maps öffnen
         </a>
       </div>
     </div>
@@ -848,7 +848,7 @@
   const inboxUrl = new URL("./inbox/", window.location.href).href;
   const defaultSiteSettings = {
     maintenanceMode: false,
-    maintenanceMessage: "Website wird gerade bearbeitet. Bitte spaeter erneut versuchen."
+    maintenanceMessage: "Website wird gerade bearbeitet. Bitte später erneut versuchen."
   };
   const defaultMenuItems = [
     {
@@ -863,7 +863,7 @@
     },
     {
       title: "Tandoori Chicken",
-      description: "Chicken mariniert in Joghurt und Gewuerzen, gegrillt im Tandoor.",
+      description: "Chicken mariniert in Joghurt und Gewürzen, gegrillt im Tandoor.",
       imageUrl: "https://images.getrecipekit.com/20250721213330-Tandoori-Chicken-2.jpg?aspect_ratio=16:9&quality=90&",
       category: "Signature",
       badge: "",
@@ -1021,7 +1021,7 @@
     if (imageUrl) {
       const image = document.createElement("img");
       image.src = imageUrl;
-      image.alt = item.title || "Menue-Eintrag";
+      image.alt = item.title || "Menü-Eintrag";
       article.appendChild(image);
     }
 
@@ -1093,7 +1093,7 @@
     menuGrid.replaceChildren();
 
     if (!normalizedItems.length) {
-      setMenuState(emptyMessage || "Unser Menue wird gerade aktualisiert.", false);
+      setMenuState(emptyMessage || "Unser Menü wird gerade aktualisiert.", false);
       return;
     }
 
@@ -1113,7 +1113,7 @@
       return;
     }
 
-    setMenuState("Menue wird geladen ...", false);
+    setMenuState("Menü wird geladen ...", false);
 
     try {
       const response = await fetch(normalizeApiBaseUrl() + "/menu", {
@@ -1129,7 +1129,7 @@
       const items = Array.isArray(result && result.items) ? result.items : [];
 
       if (!items.length) {
-        renderMenuItems([], "Unser Menue wird gerade aktualisiert.");
+        renderMenuItems([], "Unser Menü wird gerade aktualisiert.");
         return;
       }
 
@@ -1256,7 +1256,7 @@
       notifyToggle.disabled = true;
       setNotificationUi(
         "off",
-        "Nicht verfuegbar",
+        "Nicht verfügbar",
         "Push braucht HTTPS, Service Worker und einen unterst&uuml;tzten Browser."
       );
       return;
@@ -1347,14 +1347,14 @@
       await saveInboxMessage({
         id: "local-" + Date.now(),
         title: "Winkelwerk",
-        body: "Push ist jetzt auf diesem Geraet aktiviert.",
+        body: "Push ist jetzt auf diesem Gerät aktiviert.",
         url: inboxUrl,
         sentAt: new Date().toISOString(),
         source: "system"
       });
 
       await registration.showNotification("Winkelwerk", {
-        body: "Push ist jetzt auf diesem Geraet aktiviert.",
+        body: "Push ist jetzt auf diesem Gerät aktiviert.",
         icon: "./apple-touch-icon.png",
         badge: "./icon-192.png",
         data: {

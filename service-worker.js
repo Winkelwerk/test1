@@ -1,4 +1,4 @@
-const CACHE_NAME = "winkelwerk-shell-v4";
+const CACHE_NAME = "winkelwerk-shell-v5";
 const DB_NAME = "winkelwerk-inbox";
 const STORE_NAME = "messages";
 const MAX_MESSAGES = 40;
@@ -10,14 +10,33 @@ const APP_SHELL = [
   "./icon-192.png",
   "./icon-512.png",
   "./winkelwerlk.png",
-  "./menü/",
+  "./men%C3%BC/",
+  "./men%C3%BC/index.html",
   "./inbox/",
-  "./admin/"
+  "./inbox/index.html",
+  "./admin/",
+  "./admin/index.html"
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting())
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+
+      await Promise.allSettled(
+        APP_SHELL.map(async (asset) => {
+          const response = await fetch(asset, {
+            cache: "reload"
+          });
+
+          if (response.ok) {
+            await cache.put(asset, response);
+          }
+        })
+      );
+
+      await self.skipWaiting();
+    })()
   );
 });
 

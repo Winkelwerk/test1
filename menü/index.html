@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Winkelwerk Menue">
+  <meta name="apple-mobile-web-app-title" content="Winkelwerk Menü">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2b2b2b">
   <meta name="color-scheme" content="light dark">
-  <title>Winkelwerk Menue</title>
+  <title>Winkelwerk Menü</title>
   <link rel="icon" type="image/png" href="../winkelwerlk.png">
   <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
   <link rel="manifest" href="../manifest.webmanifest">
@@ -595,7 +595,7 @@
     <img src="../winkelwerlk.png" alt="Winkelwerk">
     <p class="maintenance-kicker">Bitte etwas Geduld</p>
     <h2>Website wird gerade bearbeitet</h2>
-    <p id="maintenanceMessage">Bitte spaeter erneut versuchen.</p>
+    <p id="maintenanceMessage">Bitte später erneut versuchen.</p>
   </div>
 </div>
 
@@ -623,14 +623,14 @@
 <header>
   <div class="hero-content">
     <h1>Unser Men&uuml;</h1>
-    <p>Alle Gerichte zentral aus dem Adminbereich gepflegt, auf einer eigenen Seite fuer den klaren Fokus aufs Essen.</p>
+    <p>Alle Gerichte zentral aus dem Adminbereich gepflegt, auf einer eigenen Seite für den klaren Fokus aufs Essen.</p>
     <a class="btn" href="../#contact">Jetzt reservieren</a>
   </div>
 </header>
 
 <section>
   <h2>Winkelwerk Men&uuml;</h2>
-  <p class="menu-copy">Saisonal, frisch und direkt aus dem Winkelwerk. Dieses Men&uuml; wird vollstaendig ueber dein Admin-Panel verwaltet.</p>
+  <p class="menu-copy">Saisonal, frisch und direkt aus dem Winkelwerk. Dieses Men&uuml; wird vollständig über dein Admin-Panel verwaltet.</p>
   <div class="menu" id="menuGrid"></div>
   <p class="menu-state is-hidden" id="menuState"></p>
 </section>
@@ -660,7 +660,7 @@
   const inboxUrl = new URL("../inbox/", window.location.href).href;
   const defaultSiteSettings = {
     maintenanceMode: false,
-    maintenanceMessage: "Website wird gerade bearbeitet. Bitte spaeter erneut versuchen."
+    maintenanceMessage: "Website wird gerade bearbeitet. Bitte später erneut versuchen."
   };
   const defaultMenuItems = [
     {
@@ -675,7 +675,7 @@
     },
     {
       title: "Tandoori Chicken",
-      description: "Chicken mariniert in Joghurt und Gewuerzen, gegrillt im Tandoor.",
+      description: "Chicken mariniert in Joghurt und Gewürzen, gegrillt im Tandoor.",
       imageUrl: "https://images.getrecipekit.com/20250721213330-Tandoori-Chicken-2.jpg?aspect_ratio=16:9&quality=90&",
       category: "Signature",
       badge: "",
@@ -829,7 +829,7 @@
     if (imageUrl) {
       const image = document.createElement("img");
       image.src = imageUrl;
-      image.alt = item.title || "Menue-Eintrag";
+      image.alt = item.title || "Menü-Eintrag";
       article.appendChild(image);
     }
 
@@ -897,7 +897,7 @@
     menuGrid.replaceChildren();
 
     if (!normalizedItems.length) {
-      setMenuState(emptyMessage || "Unser Menue wird gerade aktualisiert.", false);
+      setMenuState(emptyMessage || "Unser Menü wird gerade aktualisiert.", false);
       return;
     }
 
@@ -917,7 +917,7 @@
       return;
     }
 
-    setMenuState("Menue wird geladen ...", false);
+    setMenuState("Menü wird geladen ...", false);
 
     try {
       const response = await fetch(normalizeApiBaseUrl() + "/menu", {
@@ -933,7 +933,7 @@
       const items = Array.isArray(result && result.items) ? result.items : [];
 
       if (!items.length) {
-        renderMenuItems([], "Unser Menue wird gerade aktualisiert.");
+        renderMenuItems([], "Unser Menü wird gerade aktualisiert.");
         return;
       }
 
@@ -1052,8 +1052,8 @@
       notifyToggle.disabled = true;
       setNotificationUi(
         "off",
-        "Nicht verfuegbar",
-        "Push braucht HTTPS, Service Worker und einen unterstuetzten Browser."
+        "Nicht verfügbar",
+        "Push braucht HTTPS, Service Worker und einen unterstützten Browser."
       );
       return;
     }
@@ -1094,7 +1094,7 @@
     setNotificationUi(
       "off",
       "Aus",
-      "Aktiviert Web-Push fuer interne Winkelwerk-Nachrichten auf diesem Geraet."
+      "Aktiviert Web-Push für interne Winkelwerk-Nachrichten auf diesem Gerät."
     );
   }
 
@@ -1138,14 +1138,14 @@
       await saveInboxMessage({
         id: "local-" + Date.now(),
         title: "Winkelwerk",
-        body: "Push ist jetzt auf diesem Geraet aktiviert.",
+        body: "Push ist jetzt auf diesem Gerät aktiviert.",
         url: inboxUrl,
         sentAt: new Date().toISOString(),
         source: "system"
       });
 
       await registration.showNotification("Winkelwerk", {
-        body: "Push ist jetzt auf diesem Geraet aktiviert.",
+        body: "Push ist jetzt auf diesem Gerät aktiviert.",
         icon: "../apple-touch-icon.png",
         badge: "../icon-192.png",
         data: {
@@ -1158,7 +1158,7 @@
       setNotificationUi(
         "off",
         "Fehler",
-        "Die Push-Anmeldung hat nicht funktioniert. Pruefe Backend, VAPID-Key und HTTPS."
+        "Die Push-Anmeldung hat nicht funktioniert. Prüfe Backend, VAPID-Key und HTTPS."
       );
       return;
     }

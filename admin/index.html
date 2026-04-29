@@ -448,7 +448,7 @@
         <div>
           <p class="admin-kicker">Winkelwerk Intern</p>
           <h2>Nachrichten senden</h2>
-          <p class="lead">Von hier sendest du interne Website-Nachrichten an alle Geraete mit aktivem Winkelwerk-Push.</p>
+          <p class="lead">Von hier sendest du interne Website-Nachrichten an alle Geräte mit aktivem Winkelwerk-Push.</p>
         </div>
         <button class="ghost-btn" id="lockAdmin" type="button">Abmelden</button>
       </div>
@@ -476,7 +476,7 @@
       </form>
 
       <div class="hint-box">
-        Diese Seite sendet echte Web-Push-Nachrichten ueber dein Backend. Der sichtbare Zugangsschutz ist clientseitig, die eigentliche Sendefreigabe laeuft ueber denselben Admin-Code auf dem Backend.
+        Diese Seite sendet echte Web-Push-Nachrichten über dein Backend. Der sichtbare Zugangsschutz ist clientseitig, die eigentliche Sendefreigabe läuft über denselben Admin-Code auf dem Backend.
       </div>
 
       <div class="admin-section">
@@ -503,7 +503,7 @@
         <div class="section-head">
           <p class="admin-kicker">Website Inhalt</p>
           <h3>Modulares Men&uuml; verwalten</h3>
-          <p class="lead">Gerichte anlegen, bearbeiten, ausblenden oder in der Reihenfolge verschieben. Die Website laedt diese Eintr&auml;ge automatisch aus dem Backend.</p>
+          <p class="lead">Gerichte anlegen, bearbeiten, ausblenden oder in der Reihenfolge verschieben. Die Website lädt diese Einträge automatisch aus dem Backend.</p>
         </div>
 
         <div class="editor-grid">
@@ -631,6 +631,41 @@
       return Boolean(API_BASE);
     }
 
+    async function readErrorMessage(response) {
+      const contentType = response.headers.get("content-type") || "";
+
+      if (contentType.includes("application/json")) {
+        const result = await response.json().catch(() => null);
+
+        if (result && typeof result.error === "string" && result.error.trim()) {
+          return result.error.trim();
+        }
+      }
+
+      const errorText = await response.text().catch(() => "");
+      return errorText || "Request failed";
+    }
+
+    function describeSiteSettingsError(error, action) {
+      const errorMessage = String(error && error.message ? error.message : "");
+      const normalized = errorMessage.toLowerCase();
+      const migrationHint = "Bitte führe die Migration 20260429_site_settings.sql aus und deploye push-api neu.";
+
+      if (
+        normalized.includes("site_settings")
+        || normalized.includes("unknown action")
+        || normalized.includes("migration")
+      ) {
+        return action === "load"
+          ? "Wartungsmodus konnte nicht geladen werden. " + migrationHint
+          : "Wartungsmodus konnte nicht gespeichert werden. " + migrationHint;
+      }
+
+      return action === "load"
+        ? "Wartungsmodus konnte nicht geladen werden."
+        : "Wartungsmodus konnte nicht gespeichert werden.";
+    }
+
     async function requestJson(path, options) {
       const method = options && options.method ? options.method : "GET";
       const payload = options ? options.payload : undefined;
@@ -651,7 +686,7 @@
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
+        const errorText = await readErrorMessage(response);
         throw new Error(errorText || "Request failed");
       }
 
@@ -669,8 +704,8 @@
         maintenanceMessage: String(
           settings && settings.maintenanceMessage
             ? settings.maintenanceMessage
-            : "Website wird gerade bearbeitet. Bitte spaeter erneut versuchen."
-        ).trim() || "Website wird gerade bearbeitet. Bitte spaeter erneut versuchen."
+            : "Website wird gerade bearbeitet. Bitte später erneut versuchen."
+        ).trim() || "Website wird gerade bearbeitet. Bitte später erneut versuchen."
       };
     }
 
@@ -727,7 +762,7 @@
       if (!menuItems.length) {
         const emptyBox = document.createElement("div");
         emptyBox.className = "empty-box";
-        emptyBox.textContent = "Noch keine Menue-Eintraege vorhanden. Lege jetzt den ersten Eintrag an.";
+        emptyBox.textContent = "Noch keine Menü-Einträge vorhanden. Lege jetzt den ersten Eintrag an.";
         menuAdminList.appendChild(emptyBox);
         return;
       }
@@ -803,7 +838,7 @@
         actions.appendChild(createActionButton("Hoch", "up", item.id));
         actions.appendChild(createActionButton("Runter", "down", item.id));
         actions.appendChild(createActionButton(item.isActive ? "Ausblenden" : "Einblenden", "toggle", item.id));
-        actions.appendChild(createActionButton("Loeschen", "delete", item.id));
+        actions.appendChild(createActionButton("Löschen", "delete", item.id));
         article.appendChild(actions);
 
         menuAdminList.appendChild(article);
@@ -891,13 +926,24 @@
       }
 
       try {
-        const result = await requestJson("/site-settings-admin");
+        const result = await requestJson("/site-settings");
         const settings = normalizeSiteSettings(result && result.settings ? result.settings : {});
+        const storageReady = result ? result.storageReady !== false : true;
         siteSettingsForm.elements.maintenance_mode.checked = settings.maintenanceMode;
+
+        if (!storageReady) {
+          setStatus(
+            siteSettingsStatus,
+            "Standardwerte geladen. Bitte führe die Migration 20260429_site_settings.sql aus und deploye push-api neu.",
+            "warning"
+          );
+          return;
+        }
+
         setStatus(siteSettingsStatus, "Status geladen.", "success");
       } catch (error) {
         console.log(error);
-        setStatus(siteSettingsStatus, "Wartungsmodus konnte nicht geladen werden.", "error");
+        setStatus(siteSettingsStatus, describeSiteSettingsError(error, "load"), "error");
       }
     }
 
@@ -931,7 +977,7 @@
         );
       } catch (error) {
         console.log(error);
-        setStatus(siteSettingsStatus, "Wartungsmodus konnte nicht gespeichert werden.", "error");
+        setStatus(siteSettingsStatus, describeSiteSettingsError(error, "save"), "error");
       }
     }
 
@@ -950,7 +996,7 @@
       }
 
       if (!silent) {
-        setStatus(menuListStatus, "Menue wird geladen ...", "");
+        setStatus(menuListStatus, "Menü wird geladen ...", "");
       }
 
       try {
@@ -963,14 +1009,14 @@
         syncMenuFormFromState();
 
         if (!menuItems.length) {
-          setStatus(menuListStatus, "Noch keine Menue-Eintraege vorhanden.", "");
+          setStatus(menuListStatus, "Noch keine Menü-Einträge vorhanden.", "");
           return;
         }
 
-        setStatus(menuListStatus, "Menue geladen.", "success");
+        setStatus(menuListStatus, "Menü geladen.", "success");
       } catch (error) {
         console.log(error);
-        setStatus(menuListStatus, "Menue konnte nicht geladen werden.", "error");
+        setStatus(menuListStatus, "Menü konnte nicht geladen werden.", "error");
       }
     }
 
@@ -999,19 +1045,19 @@
         }
 
         setStatus(menuFormStatus, successMessage, "success");
-        setStatus(menuListStatus, "Menue aktualisiert.", "success");
+        setStatus(menuListStatus, "Menü aktualisiert.", "success");
       } catch (error) {
         console.log(error);
-        setStatus(menuFormStatus, "Speichern fehlgeschlagen. Pruefe Eingaben und Backend.", "error");
+        setStatus(menuFormStatus, "Speichern fehlgeschlagen. Prüfe Eingaben und Backend.", "error");
       }
     }
 
     async function deleteMenuItem(itemId) {
-      if (!window.confirm("Diesen Menue-Eintrag wirklich loeschen?")) {
+      if (!window.confirm("Diesen Menü-Eintrag wirklich löschen?")) {
         return;
       }
 
-      setStatus(menuListStatus, "Eintrag wird geloescht ...", "");
+      setStatus(menuListStatus, "Eintrag wird gelöscht ...", "");
 
       try {
         await requestJson("/menu-admin", {
@@ -1032,10 +1078,10 @@
           renderMenuAdminList();
         }
 
-        setStatus(menuListStatus, "Eintrag geloescht.", "success");
+        setStatus(menuListStatus, "Eintrag gelöscht.", "success");
       } catch (error) {
         console.log(error);
-        setStatus(menuListStatus, "Loeschen fehlgeschlagen.", "error");
+        setStatus(menuListStatus, "Löschen fehlgeschlagen.", "error");
       }
     }
 
@@ -1071,7 +1117,7 @@
 
     gateForm.addEventListener("submit", async function (event) {
       event.preventDefault();
-      setStatus(gateStatus, "Code wird geprueft ...", "");
+      setStatus(gateStatus, "Code wird geprüft ...", "");
 
       try {
         const trimmedCode = accessCode.value.trim();
@@ -1079,7 +1125,7 @@
 
         if (submittedHash === ACCESS_CODE_HASH) {
           currentAdminCode = trimmedCode;
-          setStatus(gateStatus, "Zugang gewaehhrt.", "success");
+          setStatus(gateStatus, "Zugang gewährt.", "success");
           openAdminPanel();
 
           if (!backendConfigured()) {
@@ -1099,7 +1145,7 @@
         setStatus(gateStatus, "Falscher Code.", "error");
       } catch (error) {
         console.log(error);
-        setStatus(gateStatus, "Der Code konnte gerade nicht geprueft werden.", "error");
+        setStatus(gateStatus, "Der Code konnte gerade nicht geprüft werden.", "error");
       }
     });
 
@@ -1138,12 +1184,12 @@
         });
 
         const sentCount = typeof result.sentCount === "number" ? result.sentCount : 0;
-        setStatus(messageStatus, "Nachricht erfolgreich an " + sentCount + " Geraet(e) gesendet.", "success");
+        setStatus(messageStatus, "Nachricht erfolgreich an " + sentCount + " Gerät(e) gesendet.", "success");
         adminMessageForm.reset();
         adminMessageForm.elements.target_url.value = "../inbox/";
       } catch (error) {
         console.log(error);
-        setStatus(messageStatus, "Senden fehlgeschlagen. Pruefe Backend, Code und Push-Abos.", "error");
+        setStatus(messageStatus, "Senden fehlgeschlagen. Prüfe Backend, Code und Push-Abos.", "error");
       }
     });
 
