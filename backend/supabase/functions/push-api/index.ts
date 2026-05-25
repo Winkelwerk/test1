@@ -72,17 +72,33 @@ function normalizeInteger(value: unknown, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function normalizeMenuPeriod(value: unknown) {
-  const normalized = normalizeText(value).toLowerCase();
+function normalizeMenuPeriods(value: unknown) {
+  const rawValues = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? normalizeText(value).replace(/^\{|\}$/g, "").split(",")
+      : [value];
 
-  if (normalized === "breakfast" || normalized === "lunch" || normalized === "dinner") {
-    return normalized;
+  const uniqueValues = Array.from(new Set(
+    rawValues
+      .map((item) => normalizeText(item).toLowerCase())
+      .filter((item) => ["all_day", "breakfast", "lunch", "dinner"].includes(item))
+  ));
+
+  if (!uniqueValues.length || uniqueValues.includes("all_day")) {
+    return ["all_day"];
   }
 
-  return "all_day";
+  return ["breakfast", "lunch", "dinner"].filter((item) => uniqueValues.includes(item));
+}
+
+function getPrimaryMenuPeriod(value: unknown) {
+  return normalizeMenuPeriods(value)[0] ?? "all_day";
 }
 
 function mapMenuItem(record: Record<string, any>) {
+  const menuPeriods = normalizeMenuPeriods(record.menu_periods ?? record.menu_period);
+
   return {
     id: record.id,
     title: record.title,
@@ -93,7 +109,8 @@ function mapMenuItem(record: Record<string, any>) {
     badge: record.badge ?? "",
     ctaLabel: record.cta_label ?? "",
     ctaUrl: record.cta_url ?? "",
-    menuPeriod: normalizeMenuPeriod(record.menu_period),
+    menuPeriod: getPrimaryMenuPeriod(menuPeriods),
+    menuPeriods,
     sortOrder: Number(record.sort_order ?? 0),
     isActive: Boolean(record.is_active),
     createdAt: record.created_at,
@@ -293,6 +310,7 @@ Deno.serve(async (request) => {
         const sortOrder = hasSortOrder
           ? normalizeInteger(body?.sortOrder, 0)
           : await getNextMenuSortOrder();
+        const menuPeriods = normalizeMenuPeriods(body?.menuPeriods ?? body?.menuPeriod);
 
         if (!title || !description) {
           return jsonResponse({ error: "Title and description are required." }, 400);
@@ -307,7 +325,8 @@ Deno.serve(async (request) => {
           badge: normalizeOptionalText(body?.badge),
           cta_label: normalizeOptionalText(body?.ctaLabel),
           cta_url: normalizeOptionalText(body?.ctaUrl),
-          menu_period: normalizeMenuPeriod(body?.menuPeriod),
+          menu_period: getPrimaryMenuPeriod(menuPeriods),
+          menu_periods: menuPeriods,
           sort_order: sortOrder,
           is_active: body?.isActive === undefined ? true : normalizeBoolean(body?.isActive),
           updated_at: new Date().toISOString()

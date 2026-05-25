@@ -139,6 +139,49 @@
       resize: vertical;
     }
 
+    fieldset {
+      min-width: 0;
+      border: 1px solid var(--field-border);
+      border-radius: 18px;
+      padding: 12px;
+    }
+
+    legend {
+      padding: 0 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .period-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .period-choice {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(127, 127, 127, 0.06);
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .period-choice input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      padding: 0;
+    }
+
+    .period-choice span {
+      font-size: 14px;
+      font-weight: bold;
+      line-height: 1.45;
+    }
+
     .btn,
     .ghost-btn {
       border: none;
@@ -555,15 +598,27 @@
                   <input type="text" name="category" placeholder="z. B. Burger">
                 </label>
 
-                <label>
-                  Karte / Zeitfenster
-                  <select name="menu_period">
-                    <option value="all_day">Ganzt&auml;gig sichtbar</option>
-                    <option value="breakfast">Fr&uuml;hst&uuml;ckskarte 09:00 - 12:00</option>
-                    <option value="lunch">Mittagskarte 12:00 - 17:00</option>
-                    <option value="dinner">Abendkarte 17:00 - 21:00</option>
-                  </select>
-                </label>
+                <fieldset>
+                  <legend>Karte / Zeitfenster</legend>
+                  <div class="period-grid">
+                    <label class="period-choice">
+                      <input type="checkbox" name="menu_periods" value="all_day" checked>
+                      <span>Ganzt&auml;gig sichtbar</span>
+                    </label>
+                    <label class="period-choice">
+                      <input type="checkbox" name="menu_periods" value="breakfast">
+                      <span>Fr&uuml;hst&uuml;ckskarte 09:00 - 12:00</span>
+                    </label>
+                    <label class="period-choice">
+                      <input type="checkbox" name="menu_periods" value="lunch">
+                      <span>Mittagskarte 12:00 - 17:00</span>
+                    </label>
+                    <label class="period-choice">
+                      <input type="checkbox" name="menu_periods" value="dinner">
+                      <span>Abendkarte 17:00 - 21:00</span>
+                    </label>
+                  </div>
+                </fieldset>
 
                 <label>
                   Badge
@@ -758,18 +813,38 @@
       return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
     }
 
-    function normalizeMenuPeriod(value) {
-      const normalized = String(value || "").trim().toLowerCase();
+    function normalizeMenuPeriods(value) {
+      const rawValues = Array.isArray(value)
+        ? value
+        : typeof value === "string"
+          ? String(value).replace(/^\{|\}$/g, "").split(",")
+          : [value];
 
-      if (normalized === "breakfast" || normalized === "lunch" || normalized === "dinner") {
-        return normalized;
+      const uniqueValues = Array.from(new Set(
+        rawValues
+          .map(function (item) {
+            return String(item || "").trim().toLowerCase();
+          })
+          .filter(function (item) {
+            return ["all_day", "breakfast", "lunch", "dinner"].includes(item);
+          })
+      ));
+
+      if (!uniqueValues.length || uniqueValues.includes("all_day")) {
+        return ["all_day"];
       }
 
-      return "all_day";
+      return ["breakfast", "lunch", "dinner"].filter(function (item) {
+        return uniqueValues.includes(item);
+      });
+    }
+
+    function getPrimaryMenuPeriod(value) {
+      return normalizeMenuPeriods(value)[0] || "all_day";
     }
 
     function formatMenuPeriodLabel(value) {
-      const period = normalizeMenuPeriod(value);
+      const period = String(value || "").trim().toLowerCase();
 
       if (period === "breakfast") {
         return "Fruehstueck 09-12 Uhr";
@@ -784,6 +859,59 @@
       }
 
       return "Ganztags";
+    }
+
+    function formatMenuPeriodLabels(value) {
+      return normalizeMenuPeriods(value).map(formatMenuPeriodLabel);
+    }
+
+    function getMenuPeriodInputs() {
+      return Array.from(menuItemForm.querySelectorAll('input[name="menu_periods"]'));
+    }
+
+    function setMenuPeriodInputs(value) {
+      const normalizedPeriods = normalizeMenuPeriods(value);
+
+      getMenuPeriodInputs().forEach(function (input) {
+        input.checked = normalizedPeriods.includes(input.value);
+      });
+    }
+
+    function readMenuPeriodsFromForm() {
+      return normalizeMenuPeriods(
+        getMenuPeriodInputs()
+          .filter(function (input) {
+            return input.checked;
+          })
+          .map(function (input) {
+            return input.value;
+          })
+      );
+    }
+
+    function handleMenuPeriodInputChange(changedInput) {
+      if (!changedInput) {
+        return;
+      }
+
+      const inputs = getMenuPeriodInputs();
+
+      if (changedInput.value === "all_day" && changedInput.checked) {
+        setMenuPeriodInputs(["all_day"]);
+        return;
+      }
+
+      if (changedInput.value !== "all_day" && changedInput.checked) {
+        inputs.forEach(function (input) {
+          if (input.value === "all_day") {
+            input.checked = false;
+          }
+        });
+      }
+
+      if (!readMenuPeriodsFromForm().length) {
+        setMenuPeriodInputs(["all_day"]);
+      }
     }
 
     function normalizeSiteSettings(settings) {
@@ -805,7 +933,8 @@
         imageUrl: String(item && item.imageUrl ? item.imageUrl : "").trim(),
         price: String(item && item.price ? item.price : "").trim(),
         category: String(item && item.category ? item.category : "").trim(),
-        menuPeriod: normalizeMenuPeriod(item && item.menuPeriod ? item.menuPeriod : ""),
+        menuPeriod: getPrimaryMenuPeriod(item && (item.menuPeriods || item.menuPeriod)),
+        menuPeriods: normalizeMenuPeriods(item && (item.menuPeriods || item.menuPeriod)),
         badge: String(item && item.badge ? item.badge : "").trim(),
         ctaLabel: String(item && item.ctaLabel ? item.ctaLabel : "").trim(),
         ctaUrl: String(item && item.ctaUrl ? item.ctaUrl : "").trim(),
@@ -1111,11 +1240,14 @@
         header.appendChild(createTag(item.isActive ? "Live" : "Ausgeblendet", !item.isActive));
         article.appendChild(header);
 
-        if (item.menuPeriod || item.category || item.badge) {
+        if ((item.menuPeriods && item.menuPeriods.length) || item.category || item.badge) {
           const tags = document.createElement("div");
           tags.className = "menu-admin-tags";
 
-          tags.appendChild(createTag(formatMenuPeriodLabel(item.menuPeriod), item.menuPeriod === "all_day"));
+          formatMenuPeriodLabels(item.menuPeriods).forEach(function (label) {
+            const muted = item.menuPeriods.length === 1 && item.menuPeriods[0] === "all_day";
+            tags.appendChild(createTag(label, muted));
+          });
 
           if (item.category) {
             tags.appendChild(createTag(item.category, false));
@@ -1162,7 +1294,7 @@
       menuItemForm.elements.title.value = item.title;
       menuItemForm.elements.price.value = item.price;
       menuItemForm.elements.category.value = item.category;
-      menuItemForm.elements.menu_period.value = normalizeMenuPeriod(item.menuPeriod);
+      setMenuPeriodInputs(item.menuPeriods);
       menuItemForm.elements.badge.value = item.badge;
       menuItemForm.elements.image_url.value = item.imageUrl;
       menuItemForm.elements.cta_label.value = item.ctaLabel;
@@ -1189,7 +1321,7 @@
       menuItemForm.reset();
       menuItemForm.elements.id.value = "";
       menuItemForm.elements.is_active.checked = true;
-      menuItemForm.elements.menu_period.value = "all_day";
+      setMenuPeriodInputs(["all_day"]);
       setMenuEditorTitle(false);
       setStatus(menuFormStatus, "", "");
       renderMenuAdminList();
@@ -1391,8 +1523,8 @@
       try {
         const result = await requestJson("/menu-admin");
         const rawItems = Array.isArray(result && result.items) ? result.items : [];
-        const menuPeriodAvailable = rawItems.some(function (item) {
-          return item && Object.prototype.hasOwnProperty.call(item, "menuPeriod");
+        const menuPeriodsAvailable = rawItems.some(function (item) {
+          return item && Object.prototype.hasOwnProperty.call(item, "menuPeriods");
         });
 
         menuItems = rawItems
@@ -1407,8 +1539,8 @@
           return;
         }
 
-        if (!menuPeriodAvailable) {
-          setStatus(menuListStatus, "Menü geladen. Zeitkarten werden erst nach Migration 20260525_menu_periods.sql und neuem push-api Deploy aktiv.", "warning");
+        if (!menuPeriodsAvailable) {
+          setStatus(menuListStatus, "Menü geladen. Mehrfach-Zeitfenster werden erst nach Migration 20260525193000_menu_period_arrays.sql und neuem push-api Deploy aktiv.", "warning");
           return;
         }
 
@@ -1611,6 +1743,16 @@
       await saveSiteSettingsAdmin();
     });
 
+    menuItemForm.addEventListener("change", function (event) {
+      const target = event.target;
+
+      if (!(target instanceof HTMLInputElement) || target.name !== "menu_periods") {
+        return;
+      }
+
+      handleMenuPeriodInputChange(target);
+    });
+
     menuItemForm.addEventListener("submit", async function (event) {
       event.preventDefault();
 
@@ -1642,7 +1784,7 @@
         description: description,
         price: String(formData.get("price") || "").trim(),
         category: String(formData.get("category") || "").trim(),
-        menuPeriod: normalizeMenuPeriod(formData.get("menu_period") || ""),
+        menuPeriods: readMenuPeriodsFromForm(),
         badge: String(formData.get("badge") || "").trim(),
         imageUrl: String(formData.get("image_url") || "").trim(),
         ctaLabel: String(formData.get("cta_label") || "").trim(),
@@ -1682,7 +1824,7 @@
           description: item.description,
           price: item.price,
           category: item.category,
-          menuPeriod: item.menuPeriod,
+          menuPeriods: item.menuPeriods,
           badge: item.badge,
           imageUrl: item.imageUrl,
           ctaLabel: item.ctaLabel,

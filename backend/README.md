@@ -25,8 +25,10 @@ Offizielle Infos:
   Das Datenbankschema fuer das Website-Menue
 - `supabase/migrations/20260429_site_settings.sql`
   Das Datenbankschema fuer globale Website-Einstellungen wie Wartungsmodus
-- `supabase/migrations/20260525_menu_periods.sql`
+- `supabase/migrations/20260525180000_menu_periods.sql`
   Erweitert das Website-Menue um Zeitfenster wie Fruehstueck, Mittag und Abend
+- `supabase/migrations/20260525193000_menu_period_arrays.sql`
+  Erweitert die Zeitfenster auf Mehrfachauswahl wie Mittag und Abend gleichzeitig
 - `supabase/functions/push-api/index.ts`
   Die HTTP-API fuer
   - `GET /menu`
