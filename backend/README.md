@@ -20,9 +20,13 @@ Offizielle Infos:
 ## Was in diesem Ordner schon fertig ist
 
 - `supabase/migrations/20260427_push.sql`
-  Das Datenbankschema fuer Push-Abos, interne Nachrichten und das Website-Menue
+  Das Datenbankschema fuer Push-Abos und interne Nachrichten
+- `supabase/migrations/20260428204158_new-migration.sql`
+  Das Datenbankschema fuer das Website-Menue
 - `supabase/migrations/20260429_site_settings.sql`
   Das Datenbankschema fuer globale Website-Einstellungen wie Wartungsmodus
+- `supabase/migrations/20260525_menu_periods.sql`
+  Erweitert das Website-Menue um Zeitfenster wie Fruehstueck, Mittag und Abend
 - `supabase/functions/push-api/index.ts`
   Die HTTP-API fuer
   - `GET /menu`

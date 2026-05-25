@@ -374,6 +374,58 @@
       display: none;
     }
 
+    .menu-schedule {
+      width: min(820px, 100%);
+      margin: 0 auto 28px;
+      padding: 22px;
+      border-radius: 18px;
+      background: var(--card-bg);
+      box-shadow: 0 4px 10px var(--card-shadow);
+      text-align: left;
+    }
+
+    .menu-schedule-kicker {
+      margin-bottom: 8px;
+      color: var(--btn-bg);
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .menu-schedule-title {
+      margin-bottom: 8px;
+      font-size: 24px;
+    }
+
+    .menu-schedule-copy {
+      margin-bottom: 16px;
+      line-height: 1.6;
+      color: var(--placeholder-color);
+    }
+
+    .menu-schedule-slots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .menu-schedule-slot {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 77, 77, 0.08);
+      color: var(--card-text);
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .menu-schedule-slot.is-active {
+      background: var(--btn-bg);
+      color: #ffffff;
+    }
+
     .menu {
       width: min(1180px, 100%);
       margin: 0 auto;
@@ -631,6 +683,12 @@
 <section>
   <h2>Winkelwerk Men&uuml;</h2>
   <p class="menu-copy">Saisonal, frisch und direkt aus dem Winkelwerk. Dieses Men&uuml; wird vollständig über dein Admin-Panel verwaltet.</p>
+  <div class="menu-schedule">
+    <p class="menu-schedule-kicker">Automatisch nach Uhrzeit</p>
+    <h3 class="menu-schedule-title" id="menuScheduleTitle">Kartenzeiten werden geladen ...</h3>
+    <p class="menu-schedule-copy" id="menuScheduleCopy">Die Speisekarte wechselt automatisch nach Berliner Uhrzeit.</p>
+    <div class="menu-schedule-slots" id="menuScheduleSlots"></div>
+  </div>
   <div class="menu" id="menuGrid"></div>
   <p class="menu-state is-hidden" id="menuState"></p>
 </section>
@@ -655,6 +713,9 @@
   const notifyHint = document.getElementById("notifyHint");
   const menuGrid = document.getElementById("menuGrid");
   const menuState = document.getElementById("menuState");
+  const menuScheduleTitle = document.getElementById("menuScheduleTitle");
+  const menuScheduleCopy = document.getElementById("menuScheduleCopy");
+  const menuScheduleSlots = document.getElementById("menuScheduleSlots");
   const maintenanceScreen = document.getElementById("maintenanceScreen");
   const maintenanceMessage = document.getElementById("maintenanceMessage");
   const inboxUrl = new URL("../inbox/", window.location.href).href;
@@ -670,6 +731,7 @@
       category: "Burger",
       badge: "Beliebt",
       price: "",
+      menuPeriod: "all_day",
       ctaLabel: "",
       ctaUrl: ""
     },
@@ -680,10 +742,36 @@
       category: "Signature",
       badge: "",
       price: "",
+      menuPeriod: "all_day",
       ctaLabel: "",
       ctaUrl: ""
     }
   ];
+  const menuPeriods = {
+    all_day: {
+      label: "Ganztags",
+      summary: "Ganzt&auml;gig sichtbar"
+    },
+    breakfast: {
+      label: "Fruehstueckskarte",
+      summary: "09:00 - 12:00",
+      startMinutes: 9 * 60,
+      endMinutes: 12 * 60
+    },
+    lunch: {
+      label: "Mittagskarte",
+      summary: "12:00 - 17:00",
+      startMinutes: 12 * 60,
+      endMinutes: 17 * 60
+    },
+    dinner: {
+      label: "Abendkarte",
+      summary: "17:00 - 21:00",
+      startMinutes: 17 * 60,
+      endMinutes: 21 * 60
+    }
+  };
+  const scheduledMenuPeriods = ["breakfast", "lunch", "dinner"];
   let serviceWorkerRegistrationPromise;
 
   function isDesktopDevice() {
@@ -783,8 +871,102 @@
       category: String(item && item.category ? item.category : "").trim(),
       badge: String(item && item.badge ? item.badge : "").trim(),
       price: String(item && item.price ? item.price : "").trim(),
+      menuPeriod: normalizeMenuPeriod(item && item.menuPeriod ? item.menuPeriod : ""),
       ctaLabel: String(item && item.ctaLabel ? item.ctaLabel : "").trim(),
       ctaUrl: String(item && item.ctaUrl ? item.ctaUrl : "").trim()
+    };
+  }
+
+  function normalizeMenuPeriod(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+
+    if (normalized === "breakfast" || normalized === "lunch" || normalized === "dinner") {
+      return normalized;
+    }
+
+    return "all_day";
+  }
+
+  function getBerlinMinutesOfDay() {
+    const formatter = new Intl.DateTimeFormat("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "Europe/Berlin"
+    });
+    const parts = formatter.formatToParts(new Date());
+    const hour = Number(parts.find(function (part) {
+      return part.type === "hour";
+    })?.value || 0);
+    const minute = Number(parts.find(function (part) {
+      return part.type === "minute";
+    })?.value || 0);
+    return (hour * 60) + minute;
+  }
+
+  function getActiveScheduledMenuPeriod() {
+    const currentMinutes = getBerlinMinutesOfDay();
+
+    return scheduledMenuPeriods.find(function (key) {
+      const period = menuPeriods[key];
+      return currentMinutes >= period.startMinutes && currentMinutes < period.endMinutes;
+    }) || null;
+  }
+
+  function renderMenuSchedule(activePeriodKey) {
+    if (!menuScheduleTitle || !menuScheduleCopy || !menuScheduleSlots) {
+      return;
+    }
+
+    if (activePeriodKey && menuPeriods[activePeriodKey]) {
+      const activePeriod = menuPeriods[activePeriodKey];
+      menuScheduleTitle.textContent = activePeriod.label + " ist gerade aktiv";
+      menuScheduleCopy.innerHTML = "Angezeigt werden jetzt alle Gerichte der " + activePeriod.label + " sowie ganzt&auml;gige Eintr&auml;ge. Grundlage ist die Uhrzeit in Berlin.";
+    } else {
+      menuScheduleTitle.textContent = "Zurzeit ist keine Zeitkarte aktiv";
+      menuScheduleCopy.innerHTML = "Zwischen 21:00 und 09:00 werden nur ganzt&auml;gige Eintr&auml;ge angezeigt. Grundlage ist die Uhrzeit in Berlin.";
+    }
+
+    menuScheduleSlots.replaceChildren();
+
+    const fragment = document.createDocumentFragment();
+
+    scheduledMenuPeriods.forEach(function (key) {
+      const slot = document.createElement("span");
+      slot.className = "menu-schedule-slot" + (key === activePeriodKey ? " is-active" : "");
+      slot.textContent = menuPeriods[key].label + " " + menuPeriods[key].summary;
+      fragment.appendChild(slot);
+    });
+
+    const allDaySlot = document.createElement("span");
+    allDaySlot.className = "menu-schedule-slot";
+    allDaySlot.textContent = menuPeriods.all_day.summary;
+    fragment.appendChild(allDaySlot);
+
+    menuScheduleSlots.appendChild(fragment);
+  }
+
+  function filterMenuItemsByCurrentTime(items) {
+    const activePeriodKey = getActiveScheduledMenuPeriod();
+    const filteredItems = items.filter(function (item) {
+      const period = normalizeMenuPeriod(item.menuPeriod);
+      return period === "all_day" || (activePeriodKey && period === activePeriodKey);
+    });
+
+    let emptyMessage = "";
+
+    if (!filteredItems.length) {
+      if (activePeriodKey) {
+        emptyMessage = menuPeriods[activePeriodKey].label + " ist aktiv, aber dafuer sind noch keine Gerichte hinterlegt.";
+      } else {
+        emptyMessage = "Aktuell ist keine Zeitkarte aktiv. Fruehstueck 09:00 - 12:00, Mittag 12:00 - 17:00, Abend 17:00 - 21:00.";
+      }
+    }
+
+    return {
+      activePeriodKey,
+      emptyMessage,
+      items: filteredItems
     };
   }
 
@@ -894,16 +1076,18 @@
         return item.title && item.description;
       });
 
+    const timedMenu = filterMenuItemsByCurrentTime(normalizedItems);
     menuGrid.replaceChildren();
+    renderMenuSchedule(timedMenu.activePeriodKey);
 
-    if (!normalizedItems.length) {
-      setMenuState(emptyMessage || "Unser Menü wird gerade aktualisiert.", false);
+    if (!timedMenu.items.length) {
+      setMenuState(timedMenu.emptyMessage || emptyMessage || "Unser Menü wird gerade aktualisiert.", false);
       return;
     }
 
     const fragment = document.createDocumentFragment();
 
-    normalizedItems.forEach(function (item) {
+    timedMenu.items.forEach(function (item) {
       fragment.appendChild(createMenuCard(item));
     });
 

@@ -72,6 +72,16 @@ function normalizeInteger(value: unknown, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function normalizeMenuPeriod(value: unknown) {
+  const normalized = normalizeText(value).toLowerCase();
+
+  if (normalized === "breakfast" || normalized === "lunch" || normalized === "dinner") {
+    return normalized;
+  }
+
+  return "all_day";
+}
+
 function mapMenuItem(record: Record<string, any>) {
   return {
     id: record.id,
@@ -83,6 +93,7 @@ function mapMenuItem(record: Record<string, any>) {
     badge: record.badge ?? "",
     ctaLabel: record.cta_label ?? "",
     ctaUrl: record.cta_url ?? "",
+    menuPeriod: normalizeMenuPeriod(record.menu_period),
     sortOrder: Number(record.sort_order ?? 0),
     isActive: Boolean(record.is_active),
     createdAt: record.created_at,
@@ -296,6 +307,7 @@ Deno.serve(async (request) => {
           badge: normalizeOptionalText(body?.badge),
           cta_label: normalizeOptionalText(body?.ctaLabel),
           cta_url: normalizeOptionalText(body?.ctaUrl),
+          menu_period: normalizeMenuPeriod(body?.menuPeriod),
           sort_order: sortOrder,
           is_active: body?.isActive === undefined ? true : normalizeBoolean(body?.isActive),
           updated_at: new Date().toISOString()

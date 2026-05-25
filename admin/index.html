@@ -123,7 +123,8 @@
     }
 
     input,
-    textarea {
+    textarea,
+    select {
       width: 100%;
       padding: 14px 15px;
       border-radius: 14px;
@@ -555,6 +556,16 @@
                 </label>
 
                 <label>
+                  Karte / Zeitfenster
+                  <select name="menu_period">
+                    <option value="all_day">Ganzt&auml;gig sichtbar</option>
+                    <option value="breakfast">Fr&uuml;hst&uuml;ckskarte 09:00 - 12:00</option>
+                    <option value="lunch">Mittagskarte 12:00 - 17:00</option>
+                    <option value="dinner">Abendkarte 17:00 - 21:00</option>
+                  </select>
+                </label>
+
+                <label>
                   Badge
                   <input type="text" name="badge" placeholder="z. B. Bestseller">
                 </label>
@@ -747,6 +758,34 @@
       return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
     }
 
+    function normalizeMenuPeriod(value) {
+      const normalized = String(value || "").trim().toLowerCase();
+
+      if (normalized === "breakfast" || normalized === "lunch" || normalized === "dinner") {
+        return normalized;
+      }
+
+      return "all_day";
+    }
+
+    function formatMenuPeriodLabel(value) {
+      const period = normalizeMenuPeriod(value);
+
+      if (period === "breakfast") {
+        return "Fruehstueck 09-12 Uhr";
+      }
+
+      if (period === "lunch") {
+        return "Mittag 12-17 Uhr";
+      }
+
+      if (period === "dinner") {
+        return "Abend 17-21 Uhr";
+      }
+
+      return "Ganztags";
+    }
+
     function normalizeSiteSettings(settings) {
       return {
         maintenanceMode: Boolean(settings && settings.maintenanceMode),
@@ -766,6 +805,7 @@
         imageUrl: String(item && item.imageUrl ? item.imageUrl : "").trim(),
         price: String(item && item.price ? item.price : "").trim(),
         category: String(item && item.category ? item.category : "").trim(),
+        menuPeriod: normalizeMenuPeriod(item && item.menuPeriod ? item.menuPeriod : ""),
         badge: String(item && item.badge ? item.badge : "").trim(),
         ctaLabel: String(item && item.ctaLabel ? item.ctaLabel : "").trim(),
         ctaUrl: String(item && item.ctaUrl ? item.ctaUrl : "").trim(),
@@ -1071,9 +1111,11 @@
         header.appendChild(createTag(item.isActive ? "Live" : "Ausgeblendet", !item.isActive));
         article.appendChild(header);
 
-        if (item.category || item.badge) {
+        if (item.menuPeriod || item.category || item.badge) {
           const tags = document.createElement("div");
           tags.className = "menu-admin-tags";
+
+          tags.appendChild(createTag(formatMenuPeriodLabel(item.menuPeriod), item.menuPeriod === "all_day"));
 
           if (item.category) {
             tags.appendChild(createTag(item.category, false));
@@ -1120,6 +1162,7 @@
       menuItemForm.elements.title.value = item.title;
       menuItemForm.elements.price.value = item.price;
       menuItemForm.elements.category.value = item.category;
+      menuItemForm.elements.menu_period.value = normalizeMenuPeriod(item.menuPeriod);
       menuItemForm.elements.badge.value = item.badge;
       menuItemForm.elements.image_url.value = item.imageUrl;
       menuItemForm.elements.cta_label.value = item.ctaLabel;
@@ -1146,6 +1189,7 @@
       menuItemForm.reset();
       menuItemForm.elements.id.value = "";
       menuItemForm.elements.is_active.checked = true;
+      menuItemForm.elements.menu_period.value = "all_day";
       setMenuEditorTitle(false);
       setStatus(menuFormStatus, "", "");
       renderMenuAdminList();
@@ -1346,7 +1390,12 @@
 
       try {
         const result = await requestJson("/menu-admin");
-        menuItems = (Array.isArray(result && result.items) ? result.items : [])
+        const rawItems = Array.isArray(result && result.items) ? result.items : [];
+        const menuPeriodAvailable = rawItems.some(function (item) {
+          return item && Object.prototype.hasOwnProperty.call(item, "menuPeriod");
+        });
+
+        menuItems = rawItems
           .map(normalizeMenuItem)
           .sort(compareMenuItems);
 
@@ -1355,6 +1404,11 @@
 
         if (!menuItems.length) {
           setStatus(menuListStatus, "Noch keine Menü-Einträge vorhanden.", "");
+          return;
+        }
+
+        if (!menuPeriodAvailable) {
+          setStatus(menuListStatus, "Menü geladen. Zeitkarten werden erst nach Migration 20260525_menu_periods.sql und neuem push-api Deploy aktiv.", "warning");
           return;
         }
 
@@ -1588,6 +1642,7 @@
         description: description,
         price: String(formData.get("price") || "").trim(),
         category: String(formData.get("category") || "").trim(),
+        menuPeriod: normalizeMenuPeriod(formData.get("menu_period") || ""),
         badge: String(formData.get("badge") || "").trim(),
         imageUrl: String(formData.get("image_url") || "").trim(),
         ctaLabel: String(formData.get("cta_label") || "").trim(),
@@ -1627,6 +1682,7 @@
           description: item.description,
           price: item.price,
           category: item.category,
+          menuPeriod: item.menuPeriod,
           badge: item.badge,
           imageUrl: item.imageUrl,
           ctaLabel: item.ctaLabel,
