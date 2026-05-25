@@ -695,6 +695,26 @@
         : "Wartungsmodus konnte nicht gespeichert werden.";
     }
 
+    function describeSubscriptionsError(error, action) {
+      const errorMessage = String(error && error.message ? error.message : "");
+      const normalized = errorMessage.toLowerCase();
+      const deployHint = "Bitte deploye push-api neu, damit subscriptions-admin verfuegbar ist.";
+
+      if (
+        normalized.includes("method not allowed")
+        || normalized.includes("unknown action")
+        || normalized.includes("not found")
+      ) {
+        return action === "load"
+          ? "Push-Abonnenten konnten nicht geladen werden. " + deployHint
+          : "Abonnent konnte nicht entfernt werden. " + deployHint;
+      }
+
+      return action === "load"
+        ? "Push-Abonnenten konnten nicht geladen werden."
+        : "Abonnent konnte nicht entfernt werden.";
+    }
+
     async function requestJson(path, options) {
       const method = options && options.method ? options.method : "GET";
       const payload = options ? options.payload : undefined;
@@ -1271,7 +1291,7 @@
         setStatus(subscriptionListStatus, subscriptions.length + " Abonnent(en) geladen.", "success");
       } catch (error) {
         console.log(error);
-        setStatus(subscriptionListStatus, "Push-Abonnenten konnten nicht geladen werden.", "error");
+        setStatus(subscriptionListStatus, describeSubscriptionsError(error, "load"), "error");
       }
     }
 
@@ -1302,7 +1322,7 @@
         setStatus(subscriptionListStatus, "Abonnent entfernt.", "success");
       } catch (error) {
         console.log(error);
-        setStatus(subscriptionListStatus, "Abonnent konnte nicht entfernt werden.", "error");
+        setStatus(subscriptionListStatus, describeSubscriptionsError(error, "delete"), "error");
       }
     }
 
