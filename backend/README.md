@@ -29,14 +29,20 @@ Offizielle Infos:
   Erweitert das Website-Menue um Zeitfenster wie Fruehstueck, Mittag und Abend
 - `supabase/migrations/20260525193000_menu_period_arrays.sql`
   Erweitert die Zeitfenster auf Mehrfachauswahl wie Mittag und Abend gleichzeitig
+- `supabase/migrations/20260605190000_menu_item_types_orders.sql`
+  Fuegt `item_type` fuer Speisen und Getraenke hinzu und legt die Bestell-Tabelle an
 - `supabase/functions/push-api/index.ts`
   Die HTTP-API fuer
   - `GET /menu`
+  - `GET /drinks`
   - `GET /site-settings`
   - `GET /menu-admin`
+  - `GET /orders-admin`
   - `GET /site-settings-admin`
   - `GET /subscriptions-admin`
   - `POST /menu-admin`
+  - `POST /orders`
+  - `POST /orders-admin`
   - `POST /site-settings-admin`
   - `POST /subscriptions-admin`
   - `POST /subscribe`

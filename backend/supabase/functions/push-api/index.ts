@@ -72,6 +72,16 @@ function normalizeInteger(value: unknown, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function normalizeItemType(value: unknown) {
+  const normalized = normalizeText(value).toLowerCase();
+
+  if (normalized === "drink" || normalized === "getraenk" || normalized === "getränk") {
+    return "drink";
+  }
+
+  return "food";
+}
+
 function normalizeMenuPeriods(value: unknown) {
   const rawValues = Array.isArray(value)
     ? value
@@ -109,6 +119,7 @@ function mapMenuItem(record: Record<string, any>) {
     badge: record.badge ?? "",
     ctaLabel: record.cta_label ?? "",
     ctaUrl: record.cta_url ?? "",
+    itemType: normalizeItemType(record.item_type),
     menuPeriod: getPrimaryMenuPeriod(menuPeriods),
     menuPeriods,
     sortOrder: Number(record.sort_order ?? 0),
@@ -135,6 +146,26 @@ function mapPushSubscription(record: Record<string, any>) {
     createdAt: record.created_at ?? null,
     updatedAt: record.updated_at ?? null,
     lastSeenAt: record.last_seen_at ?? null
+  };
+}
+
+function mapOrderRequest(record: Record<string, any>) {
+  const items = Array.isArray(record.items) ? record.items : [];
+
+  return {
+    id: record.id,
+    customerName: record.customer_name ?? "",
+    customerContact: record.customer_contact ?? "",
+    pickupTime: record.pickup_time ?? "",
+    notes: record.notes ?? "",
+    items,
+    itemCount: items.reduce((total, item) => total + Number(item?.quantity ?? 0), 0),
+    sourcePage: record.source_page ?? "",
+    totalText: record.total_text ?? "",
+    totalValue: Number(record.total_value ?? 0),
+    status: record.status ?? "new",
+    createdAt: record.created_at,
+    updatedAt: record.updated_at
   };
 }
 
@@ -176,14 +207,25 @@ async function validateAdminRequest(request: Request) {
   return null;
 }
 
-async function listMenuItems(includeInactive = false) {
+async function listMenuItems(itemTypeOrIncludeInactive: unknown = false, includeInactive = false) {
+  const filterByType = typeof itemTypeOrIncludeInactive === "string"
+    ? normalizeItemType(itemTypeOrIncludeInactive)
+    : null;
+  const shouldIncludeInactive = typeof itemTypeOrIncludeInactive === "boolean"
+    ? itemTypeOrIncludeInactive
+    : includeInactive;
+
   let query = supabase
     .from("menu_items")
     .select("*")
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
-  if (!includeInactive) {
+  if (filterByType) {
+    query = query.eq("item_type", filterByType);
+  }
+
+  if (!shouldIncludeInactive) {
     query = query.eq("is_active", true);
   }
 
@@ -248,6 +290,30 @@ async function listPushSubscriptions() {
   return (data ?? []).map(mapPushSubscription);
 }
 
+async function listOrderRequests() {
+  const { data, error } = await supabase
+    .from("order_requests")
+    .select("id, customer_name, customer_contact, pickup_time, notes, items, source_page, total_text, total_value, status, created_at, updated_at")
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
+
+  if (error) {
+    if (isMissingRelationError(error, "order_requests")) {
+      return {
+        orders: [],
+        storageReady: false
+      };
+    }
+
+    throw error;
+  }
+
+  return {
+    orders: (data ?? []).map(mapOrderRequest),
+    storageReady: true
+  };
+}
+
 function ensureSubscription(body: any) {
   const subscription = body?.subscription;
 
@@ -256,6 +322,33 @@ function ensureSubscription(body: any) {
   }
 
   return subscription;
+}
+
+function normalizeOrderItems(value: unknown) {
+  const rawItems = Array.isArray(value) ? value : [];
+
+  return rawItems
+    .map((item) => {
+      const quantity = Math.max(1, normalizeInteger(item?.quantity, 1));
+      const priceValue = Number(item?.priceValue);
+      const lineTotalValue = Number(item?.lineTotalValue);
+      const normalizedPriceValue = Number.isFinite(priceValue) ? priceValue : 0;
+
+      return {
+        id: normalizeText(item?.id),
+        title: normalizeText(item?.title),
+        description: normalizeOptionalText(item?.description),
+        itemType: normalizeItemType(item?.itemType ?? item?.type),
+        category: normalizeOptionalText(item?.category),
+        badge: normalizeOptionalText(item?.badge),
+        quantity,
+        priceText: normalizeOptionalText(item?.priceText ?? item?.price),
+        priceValue: normalizedPriceValue,
+        lineTotalText: normalizeOptionalText(item?.lineTotalText),
+        lineTotalValue: Number.isFinite(lineTotalValue) ? lineTotalValue : normalizedPriceValue * quantity
+      };
+    })
+    .filter((item) => Boolean(item.title));
 }
 
 Deno.serve(async (request) => {
@@ -275,7 +368,16 @@ Deno.serve(async (request) => {
         return jsonResponse({ error: "Method not allowed." }, 405);
       }
 
-      const items = await listMenuItems(false);
+      const items = await listMenuItems("food");
+      return jsonResponse({ ok: true, items });
+    }
+
+    if (action === "drinks") {
+      if (request.method !== "GET") {
+        return jsonResponse({ error: "Method not allowed." }, 405);
+      }
+
+      const items = await listMenuItems("drink");
       return jsonResponse({ ok: true, items });
     }
 
@@ -310,7 +412,10 @@ Deno.serve(async (request) => {
         const sortOrder = hasSortOrder
           ? normalizeInteger(body?.sortOrder, 0)
           : await getNextMenuSortOrder();
-        const menuPeriods = normalizeMenuPeriods(body?.menuPeriods ?? body?.menuPeriod);
+        const itemType = normalizeItemType(body?.itemType);
+        const menuPeriods = itemType === "drink"
+          ? ["all_day"]
+          : normalizeMenuPeriods(body?.menuPeriods ?? body?.menuPeriod);
 
         if (!title || !description) {
           return jsonResponse({ error: "Title and description are required." }, 400);
@@ -325,6 +430,7 @@ Deno.serve(async (request) => {
           badge: normalizeOptionalText(body?.badge),
           cta_label: normalizeOptionalText(body?.ctaLabel),
           cta_url: normalizeOptionalText(body?.ctaUrl),
+          item_type: itemType,
           menu_period: getPrimaryMenuPeriod(menuPeriods),
           menu_periods: menuPeriods,
           sort_order: sortOrder,
@@ -412,6 +518,58 @@ Deno.serve(async (request) => {
       return jsonResponse({ error: "Unknown admin menu operation." }, 400);
     }
 
+    if (action === "orders") {
+      if (request.method !== "POST") {
+        return jsonResponse({ error: "Method not allowed." }, 405);
+      }
+
+      const body = await request.json();
+      const customerName = normalizeText(body?.customerName);
+      const customerContact = normalizeText(body?.customerContact);
+      const pickupTime = normalizeOptionalText(body?.pickupTime);
+      const notes = normalizeOptionalText(body?.notes);
+      const sourcePage = normalizeOptionalText(body?.sourcePage);
+      const totalText = normalizeOptionalText(body?.totalText);
+      const totalValue = Number(body?.totalValue);
+      const items = normalizeOrderItems(body?.items);
+
+      if (!customerName || !customerContact || !items.length) {
+        return jsonResponse({ error: "Name, contact and at least one item are required." }, 400);
+      }
+
+      const result = await supabase
+        .from("order_requests")
+        .insert({
+          customer_name: customerName,
+          customer_contact: customerContact,
+          pickup_time: pickupTime,
+          notes,
+          items,
+          source_page: sourcePage,
+          total_text: totalText,
+          total_value: Number.isFinite(totalValue) ? totalValue : 0,
+          status: "new",
+          updated_at: new Date().toISOString()
+        })
+        .select("id, customer_name, customer_contact, pickup_time, notes, items, source_page, total_text, total_value, status, created_at, updated_at")
+        .single();
+
+      if (result.error || !result.data) {
+        if (result.error && isMissingRelationError(result.error, "order_requests")) {
+          return jsonResponse({
+            error: "Die Tabelle order_requests fehlt. Bitte fuehre die neue Migration aus und deploye push-api neu."
+          }, 503);
+        }
+
+        throw result.error ?? new Error("Order save failed.");
+      }
+
+      return jsonResponse({
+        ok: true,
+        order: mapOrderRequest(result.data)
+      });
+    }
+
     if (action === "site-settings-admin") {
       const adminError = await validateAdminRequest(request);
 
@@ -490,6 +648,49 @@ Deno.serve(async (request) => {
       }
 
       return jsonResponse({ error: "Unknown subscription admin operation." }, 400);
+    }
+
+    if (action === "orders-admin") {
+      const adminError = await validateAdminRequest(request);
+
+      if (adminError) {
+        return adminError;
+      }
+
+      if (request.method === "GET") {
+        const ordersResult = await listOrderRequests();
+        return jsonResponse({ ok: true, ...ordersResult });
+      }
+
+      const body = await request.json();
+      const operation = normalizeText(body?.operation).toLowerCase();
+
+      if (operation === "delete") {
+        const orderId = normalizeInteger(body?.id, 0);
+
+        if (!orderId) {
+          return jsonResponse({ error: "Missing order id." }, 400);
+        }
+
+        const { error } = await supabase
+          .from("order_requests")
+          .delete()
+          .eq("id", orderId);
+
+        if (error) {
+          if (isMissingRelationError(error, "order_requests")) {
+            return jsonResponse({
+              error: "Die Tabelle order_requests fehlt. Bitte fuehre die neue Migration aus und deploye push-api neu."
+            }, 503);
+          }
+
+          throw error;
+        }
+
+        return jsonResponse({ ok: true });
+      }
+
+      return jsonResponse({ error: "Unknown order admin operation." }, 400);
     }
 
     if (request.method !== "POST") {

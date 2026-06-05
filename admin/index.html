@@ -585,6 +585,14 @@
 
               <div class="grid">
                 <label>
+                  Typ
+                  <select name="item_type">
+                    <option value="food">Speise</option>
+                    <option value="drink">Getr&auml;nk</option>
+                  </select>
+                </label>
+
+                <label>
                   Titel
                   <input type="text" name="title" placeholder="z. B. Smashburger" required>
                 </label>
@@ -599,7 +607,7 @@
                   <input type="text" name="category" placeholder="z. B. Burger">
                 </label>
 
-                <fieldset>
+                <fieldset id="menuPeriodFieldset">
                   <legend>Karte / Zeitfenster</legend>
                   <div class="period-grid">
                     <label class="period-choice">
@@ -675,6 +683,27 @@
           </div>
         </div>
       </div>
+
+      <div class="admin-section">
+        <div class="section-head">
+          <p class="admin-kicker">Bestellungen</p>
+          <h3>Eingegangene Demo-Bestellungen</h3>
+          <p class="lead">Die Bestellseite schreibt hier ihre Bestellungen ins Backend. Du kannst Eintr&auml;ge ansehen und entfernen.</p>
+        </div>
+
+        <div class="menu-library">
+          <div class="menu-library-topbar">
+            <div>
+              <h3>Bestell&uuml;bersicht</h3>
+              <p class="lead">Jede Demo-Bestellung landet hier mit Positionen, Kontakt und Zeitstempel.</p>
+            </div>
+            <button class="ghost-btn small-btn" id="refreshOrders" type="button">Neu laden</button>
+          </div>
+
+          <div class="menu-admin-list" id="orderAdminList"></div>
+          <p class="status" id="orderListStatus"></p>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -702,9 +731,13 @@
     const refreshSubscriptions = document.getElementById("refreshSubscriptions");
     const subscriptionAdminList = document.getElementById("subscriptionAdminList");
     const subscriptionListStatus = document.getElementById("subscriptionListStatus");
+    const refreshOrders = document.getElementById("refreshOrders");
+    const orderAdminList = document.getElementById("orderAdminList");
+    const orderListStatus = document.getElementById("orderListStatus");
     let currentAdminCode = "";
     let menuItems = [];
     let subscriptions = [];
+    let orders = [];
 
     function setStatus(target, message, type) {
       target.textContent = message;
@@ -782,6 +815,32 @@
         : "Abonnent konnte nicht entfernt werden.";
     }
 
+    function describeOrdersError(error, action) {
+      const errorMessage = String(error && error.message ? error.message : "");
+      const normalized = errorMessage.toLowerCase();
+      const deployHint = "Bitte fuehre die neue Migration aus und deploye push-api neu.";
+
+      if (
+        normalized.includes("method not allowed")
+        || normalized.includes("unknown action")
+        || normalized.includes("not found")
+      ) {
+        return action === "load"
+          ? "Bestellungen konnten nicht geladen werden. " + deployHint
+          : "Bestellung konnte nicht entfernt werden. " + deployHint;
+      }
+
+      if (normalized.includes("order_requests")) {
+        return action === "load"
+          ? "Bestellungen konnten nicht geladen werden. " + deployHint
+          : "Bestellung konnte nicht entfernt werden. " + deployHint;
+      }
+
+      return action === "load"
+        ? "Bestellungen konnten nicht geladen werden."
+        : "Bestellung konnte nicht entfernt werden.";
+    }
+
     async function requestJson(path, options) {
       const method = options && options.method ? options.method : "GET";
       const payload = options ? options.payload : undefined;
@@ -812,6 +871,20 @@
 
     function compareMenuItems(a, b) {
       return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+    }
+
+    function normalizeItemType(value) {
+      const normalized = String(value || "").trim().toLowerCase();
+
+      if (normalized === "drink" || normalized === "getraenk" || normalized === "getränk") {
+        return "drink";
+      }
+
+      return "food";
+    }
+
+    function compareOrders(a, b) {
+      return getSortTimestamp(b.createdAt) - getSortTimestamp(a.createdAt) || Number(b.id || 0) - Number(a.id || 0);
     }
 
     function normalizeMenuPeriods(value) {
@@ -934,6 +1007,7 @@
         imageUrl: String(item && item.imageUrl ? item.imageUrl : "").trim(),
         price: String(item && item.price ? item.price : "").trim(),
         category: String(item && item.category ? item.category : "").trim(),
+        itemType: normalizeItemType(item && item.itemType ? item.itemType : item && item.type),
         menuPeriod: getPrimaryMenuPeriod(item && (item.menuPeriods || item.menuPeriod)),
         menuPeriods: normalizeMenuPeriods(item && (item.menuPeriods || item.menuPeriod)),
         badge: String(item && item.badge ? item.badge : "").trim(),
@@ -948,8 +1022,41 @@
       return String(menuItemForm.elements.id.value || "");
     }
 
+    function getMenuItemType() {
+      return normalizeItemType(menuItemForm.elements.item_type.value);
+    }
+
+    function setMenuItemType(value) {
+      menuItemForm.elements.item_type.value = normalizeItemType(value);
+      updateMenuPeriodVisibility();
+    }
+
     function setMenuEditorTitle(editing) {
       menuEditorTitle.textContent = editing ? "Eintrag bearbeiten" : "Neuen Eintrag anlegen";
+    }
+
+    function getMenuPeriodFieldset() {
+      return document.getElementById("menuPeriodFieldset");
+    }
+
+    function updateMenuPeriodVisibility() {
+      const fieldset = getMenuPeriodFieldset();
+      const isDrink = getMenuItemType() === "drink";
+
+      if (!fieldset) {
+        return;
+      }
+
+      fieldset.hidden = isDrink;
+      fieldset.setAttribute("aria-hidden", isDrink ? "true" : "false");
+
+      getMenuPeriodInputs().forEach(function (input) {
+        input.disabled = isDrink;
+      });
+
+      if (isDrink) {
+        setMenuPeriodInputs(["all_day"]);
+      }
     }
 
     function createTag(label, muted) {
@@ -987,6 +1094,38 @@
       };
     }
 
+    function normalizeOrderRecord(item) {
+      const items = Array.isArray(item && item.items) ? item.items : [];
+
+      return {
+        id: String(item && item.id ? item.id : ""),
+        customerName: String(item && item.customerName ? item.customerName : "").trim(),
+        customerContact: String(item && item.customerContact ? item.customerContact : "").trim(),
+        pickupTime: String(item && item.pickupTime ? item.pickupTime : "").trim(),
+        notes: String(item && item.notes ? item.notes : "").trim(),
+        sourcePage: String(item && item.sourcePage ? item.sourcePage : "").trim(),
+        totalText: String(item && item.totalText ? item.totalText : "").trim(),
+        totalValue: Number.isFinite(Number(item && item.totalValue)) ? Number(item.totalValue) : 0,
+        status: String(item && item.status ? item.status : "new").trim() || "new",
+        itemCount: Number.isFinite(Number(item && item.itemCount)) ? Number(item.itemCount) : items.reduce(function (sum, entry) {
+          return sum + Number(entry && entry.quantity ? entry.quantity : 0);
+        }, 0),
+        items: items.map(function (entry) {
+          const rawQuantity = Number(entry && entry.quantity ? entry.quantity : 1);
+          return {
+            id: String(entry && entry.id ? entry.id : "").trim(),
+            title: String(entry && entry.title ? entry.title : "").trim(),
+            itemType: normalizeItemType(entry && entry.itemType ? entry.itemType : entry && entry.type),
+            quantity: Number.isFinite(rawQuantity) ? Math.max(1, rawQuantity) : 1,
+            priceText: String(entry && entry.priceText ? entry.priceText : entry && entry.price ? entry.price : "").trim(),
+            lineTotalText: String(entry && entry.lineTotalText ? entry.lineTotalText : "").trim()
+          };
+        }),
+        createdAt: String(item && item.createdAt ? item.createdAt : "").trim(),
+        updatedAt: String(item && item.updatedAt ? item.updatedAt : "").trim()
+      };
+    }
+
     function getSubscriptionByEndpoint(endpoint) {
       return subscriptions.find(function (item) {
         return item.endpoint === endpoint;
@@ -1013,6 +1152,16 @@
         dateStyle: "medium",
         timeStyle: "short"
       }).format(new Date(timestamp));
+    }
+
+    function formatCurrency(value) {
+      const amount = Number(value);
+      const normalizedAmount = Number.isFinite(amount) ? amount : 0;
+
+      return new Intl.NumberFormat("de-DE", {
+        style: "currency",
+        currency: "EUR"
+      }).format(normalizedAmount);
     }
 
     function getBrowserName(userAgent) {
@@ -1196,6 +1345,101 @@
       });
     }
 
+    function getOrderById(orderId) {
+      return orders.find(function (item) {
+        return String(item.id) === String(orderId);
+      }) || null;
+    }
+
+    function formatOrderItemSummary(item) {
+      const rawQuantity = Number(item && item.quantity ? item.quantity : 1);
+      const quantity = Number.isFinite(rawQuantity) ? Math.max(1, rawQuantity) : 1;
+      const title = String(item && item.title ? item.title : "").trim() || "Unbekannte Position";
+      const priceText = String(item && item.priceText ? item.priceText : "").trim();
+      const lineTotalText = String(item && item.lineTotalText ? item.lineTotalText : "").trim();
+      const parts = [
+        quantity > 1 ? quantity + "x" : "",
+        title,
+        priceText ? "@ " + priceText : "",
+        lineTotalText ? "(" + lineTotalText + ")" : ""
+      ].filter(Boolean);
+
+      return parts.join(" ");
+    }
+
+    function renderOrderAdminList() {
+      orderAdminList.replaceChildren();
+
+      if (!orders.length) {
+        const emptyBox = document.createElement("div");
+        emptyBox.className = "empty-box";
+        emptyBox.textContent = "Noch keine Bestellungen vorhanden.";
+        orderAdminList.appendChild(emptyBox);
+        return;
+      }
+
+      const sortedOrders = orders.slice().sort(compareOrders);
+
+      sortedOrders.forEach(function (order) {
+        const article = document.createElement("article");
+        article.className = "menu-admin-item";
+
+        if (order.status && order.status !== "new") {
+          article.classList.add("is-inactive");
+        }
+
+        const header = document.createElement("div");
+        header.className = "menu-admin-header";
+
+        const titleWrap = document.createElement("div");
+        const title = document.createElement("h4");
+        title.className = "menu-admin-title";
+        title.textContent = order.customerName || "Ohne Namen";
+
+        const meta = document.createElement("p");
+        meta.className = "menu-admin-meta";
+        meta.textContent = [
+          formatDateTime(order.createdAt),
+          order.customerContact ? "Kontakt: " + order.customerContact : "",
+          order.pickupTime ? "Wunschuhrzeit: " + order.pickupTime : "",
+          order.sourcePage ? "Quelle: " + order.sourcePage : ""
+        ].filter(Boolean).join(" · ");
+
+        titleWrap.appendChild(title);
+        titleWrap.appendChild(meta);
+        header.appendChild(titleWrap);
+        header.appendChild(createTag(order.status === "new" ? "Neu" : order.status, order.status !== "new"));
+        article.appendChild(header);
+
+        const tags = document.createElement("div");
+        tags.className = "menu-admin-tags";
+        tags.appendChild(createTag((order.itemCount || 0) + " Positionen", false));
+        tags.appendChild(createTag(order.totalText || formatCurrency(order.totalValue), false));
+        article.appendChild(tags);
+
+        const description = document.createElement("p");
+        description.className = "menu-admin-description";
+        description.textContent = order.items.length
+          ? order.items.map(formatOrderItemSummary).join(" · ")
+          : "Keine Positionen gespeichert.";
+        article.appendChild(description);
+
+        if (order.notes) {
+          const extra = document.createElement("p");
+          extra.className = "menu-admin-extra";
+          extra.textContent = "Notiz: " + order.notes;
+          article.appendChild(extra);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "menu-admin-actions";
+        actions.appendChild(createActionButton("Bestellung löschen", "delete-order", String(order.id)));
+        article.appendChild(actions);
+
+        orderAdminList.appendChild(article);
+      });
+    }
+
     function renderMenuAdminList() {
       menuAdminList.replaceChildren();
 
@@ -1239,6 +1483,7 @@
 
         header.appendChild(titleWrap);
         header.appendChild(createTag(item.isActive ? "Live" : "Ausgeblendet", !item.isActive));
+        header.appendChild(createTag(item.itemType === "drink" ? "Getränk" : "Speise", false));
         article.appendChild(header);
 
         if ((item.menuPeriods && item.menuPeriods.length) || item.category || item.badge) {
@@ -1292,6 +1537,7 @@
 
     function fillMenuForm(item, preserveStatus) {
       menuItemForm.elements.id.value = item.id;
+      setMenuItemType(item.itemType);
       menuItemForm.elements.title.value = item.title;
       menuItemForm.elements.price.value = item.price;
       menuItemForm.elements.category.value = item.category;
@@ -1302,6 +1548,7 @@
       menuItemForm.elements.cta_url.value = item.ctaUrl;
       menuItemForm.elements.description.value = item.description;
       menuItemForm.elements.is_active.checked = Boolean(item.isActive);
+      updateMenuPeriodVisibility();
       setMenuEditorTitle(true);
 
       if (!preserveStatus) {
@@ -1321,8 +1568,10 @@
     function resetMenuForm() {
       menuItemForm.reset();
       menuItemForm.elements.id.value = "";
+      setMenuItemType("food");
       menuItemForm.elements.is_active.checked = true;
       setMenuPeriodInputs(["all_day"]);
+      updateMenuPeriodVisibility();
       setMenuEditorTitle(false);
       setStatus(menuFormStatus, "", "");
       renderMenuAdminList();
@@ -1350,6 +1599,7 @@
       currentAdminCode = "";
       menuItems = [];
       subscriptions = [];
+      orders = [];
       adminPanel.classList.remove("is-open");
       gatePanel.classList.remove("hidden");
       accessCode.value = "";
@@ -1358,10 +1608,12 @@
       setStatus(menuListStatus, "", "");
       setStatus(siteSettingsStatus, "", "");
       setStatus(subscriptionListStatus, "", "");
+      setStatus(orderListStatus, "", "");
       siteSettingsForm.reset();
       resetMenuForm();
       renderMenuAdminList();
       renderSubscriptionAdminList();
+      renderOrderAdminList();
     }
 
     async function loadSiteSettingsAdmin(options) {
@@ -1500,6 +1752,85 @@
       } catch (error) {
         console.log(error);
         setStatus(subscriptionListStatus, describeSubscriptionsError(error, "delete"), "error");
+      }
+    }
+
+    async function loadOrders(options) {
+      const silent = options && options.silent;
+
+      if (!backendConfigured()) {
+        orders = [];
+        renderOrderAdminList();
+        setStatus(orderListStatus, "Backend fehlt: Trage zuerst die Push-API in app-config.js ein.", "warning");
+        return;
+      }
+
+      if (!currentAdminCode) {
+        return;
+      }
+
+      if (!silent) {
+        setStatus(orderListStatus, "Bestellungen werden geladen ...", "");
+      }
+
+      try {
+        const result = await requestJson("/orders-admin");
+        const storageReady = result ? result.storageReady !== false : true;
+        orders = (Array.isArray(result && result.orders) ? result.orders : [])
+          .map(normalizeOrderRecord)
+          .sort(compareOrders);
+
+        renderOrderAdminList();
+
+        if (!storageReady) {
+          setStatus(
+            orderListStatus,
+            "Bestellungen geladen. Bitte fuehre die neue Migration aus und deploye push-api neu.",
+            "warning"
+          );
+          return;
+        }
+
+        if (!orders.length) {
+          setStatus(orderListStatus, "Noch keine Bestellungen vorhanden.", "");
+          return;
+        }
+
+        setStatus(orderListStatus, orders.length + " Bestellung(en) geladen.", "success");
+      } catch (error) {
+        console.log(error);
+        setStatus(orderListStatus, describeOrdersError(error, "load"), "error");
+      }
+    }
+
+    async function deleteOrder(orderId) {
+      const item = getOrderById(orderId);
+      const label = item ? item.customerName : "diese Bestellung";
+
+      if (!window.confirm(label + " wirklich loeschen?")) {
+        return;
+      }
+
+      setStatus(orderListStatus, "Bestellung wird entfernt ...", "");
+
+      try {
+        await requestJson("/orders-admin", {
+          method: "POST",
+          payload: {
+            operation: "delete",
+            id: orderId
+          }
+        });
+
+        orders = orders.filter(function (entry) {
+          return String(entry.id) !== String(orderId);
+        });
+
+        renderOrderAdminList();
+        setStatus(orderListStatus, "Bestellung entfernt.", "success");
+      } catch (error) {
+        console.log(error);
+        setStatus(orderListStatus, describeOrdersError(error, "delete"), "error");
       }
     }
 
@@ -1665,11 +1996,13 @@
             setStatus(menuListStatus, "Backend fehlt: Trage zuerst die Push-API in app-config.js ein.", "warning");
             setStatus(siteSettingsStatus, "Backend fehlt: Trage zuerst die Push-API in app-config.js ein.", "warning");
             setStatus(subscriptionListStatus, "Backend fehlt: Trage zuerst die Push-API in app-config.js ein.", "warning");
+            setStatus(orderListStatus, "Backend fehlt: Trage zuerst die Push-API in app-config.js ein.", "warning");
           } else {
             await Promise.all([
               loadMenuItems(),
               loadSiteSettingsAdmin(),
-              loadSubscriptions()
+              loadSubscriptions(),
+              loadOrders()
             ]);
           }
 
@@ -1739,6 +2072,10 @@
       loadSubscriptions();
     });
 
+    refreshOrders.addEventListener("click", function () {
+      loadOrders();
+    });
+
     siteSettingsForm.addEventListener("submit", async function (event) {
       event.preventDefault();
       await saveSiteSettingsAdmin();
@@ -1747,11 +2084,18 @@
     menuItemForm.addEventListener("change", function (event) {
       const target = event.target;
 
-      if (!(target instanceof HTMLInputElement) || target.name !== "menu_periods") {
+      if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) {
         return;
       }
 
-      handleMenuPeriodInputChange(target);
+      if (target instanceof HTMLSelectElement && target.name === "item_type") {
+        setMenuItemType(target.value);
+        return;
+      }
+
+      if (target.name === "menu_periods") {
+        handleMenuPeriodInputChange(target);
+      }
     });
 
     menuItemForm.addEventListener("submit", async function (event) {
@@ -1781,6 +2125,7 @@
 
       await saveMenuItem({
         id: itemId,
+        itemType: String(formData.get("item_type") || "food").trim() || "food",
         title: title,
         description: description,
         price: String(formData.get("price") || "").trim(),
@@ -1821,6 +2166,7 @@
       if (action === "toggle") {
         await saveMenuItem({
           id: item.id,
+          itemType: item.itemType,
           title: item.title,
           description: item.description,
           price: item.price,
@@ -1861,6 +2207,22 @@
         nextItems[swapWith] = currentItem;
         await reorderMenuItems(nextItems);
       }
+    });
+
+    orderAdminList.addEventListener("click", async function (event) {
+      const button = event.target.closest("button[data-action]");
+
+      if (!button || button.dataset.action !== "delete-order") {
+        return;
+      }
+
+      const orderId = button.dataset.id;
+
+      if (!orderId || !getOrderById(orderId)) {
+        return;
+      }
+
+      await deleteOrder(orderId);
     });
 
     subscriptionAdminList.addEventListener("click", async function (event) {

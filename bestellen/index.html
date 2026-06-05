@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Winkelwerk Bestellen">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#2b2b2b">
+  <meta name="color-scheme" content="light dark">
+  <title>Winkelwerk Bestellen</title>
+  <link rel="icon" type="image/png" href="../winkelwerlk.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <script src="../app-config.js"></script>
+  <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+<div class="maintenance-screen" id="maintenanceScreen" aria-live="polite">
+  <div class="maintenance-card">
+    <img src="../winkelwerlk.png" alt="Winkelwerk">
+    <p class="maintenance-kicker">Bitte etwas Geduld</p>
+    <h2>Website wird gerade bearbeitet</h2>
+    <p id="maintenanceMessage">Bitte später erneut versuchen.</p>
+  </div>
+</div>
+
+<div class="menu-icon" onclick="toggleMenu()">&#9776;</div>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Zum Dunkelmodus wechseln">Dunkelmodus</button>
+
+<nav id="sideMenu">
+  <a href="../" onclick="toggleMenu()">Startseite</a>
+  <a href="../men%C3%BC/" onclick="toggleMenu()">Men&uuml;</a>
+  <a href="../getr%C3%A4nke/" onclick="toggleMenu()">Getr&auml;nke</a>
+  <a href="./" onclick="toggleMenu()">Bestellen</a>
+  <a href="../#about" onclick="toggleMenu()">&Uuml;ber uns</a>
+  <a href="../#contact" onclick="toggleMenu()">Kontakt</a>
+  <a href="../#location" onclick="toggleMenu()">Standort</a>
+  <a href="../inbox/" onclick="toggleMenu()">Postfach</a>
+  <div class="nav-divider"></div>
+  <button class="notify-toggle" id="notifyToggle" type="button" data-state="off" aria-pressed="false">
+    <span class="notify-copy">
+      <span class="notify-title">Push-Hinweise</span>
+      <span class="notify-status" id="notifyStatus">Aus</span>
+    </span>
+    <span class="notify-switch" aria-hidden="true"></span>
+  </button>
+  <p class="notify-hint" id="notifyHint">Aktiviert Browser-Benachrichtigungen f&uuml;r Winkelwerk.</p>
+</nav>
+
+<header>
+  <div class="hero-content">
+    <p class="page-eyebrow">Bestellmen&uuml;</p>
+    <h1>Winkelwerk bestellen</h1>
+    <p>Wähle Speisen und Getränke aus, lege sie in den Warenkorb und sende eine saubere Demo-Bestellung ab.</p>
+    <div class="hero-actions">
+      <a class="btn" href="../men%C3%BC/">Zum Men&uuml;</a>
+      <a class="ghost-btn" href="../getr%C3%A4nke/">Getr&auml;nke</a>
+    </div>
+  </div>
+</header>
+
+<section>
+  <h2>Speisen & Getränke</h2>
+  <p class="menu-copy">Alles hier wird aus dem Backend geladen. Du kannst mehrere Positionen kombinieren und direkt als Demo abschicken.</p>
+
+  <div class="catalog-layout">
+    <div class="catalog-panel" id="catalogPanel">
+      <div class="catalog-group">
+        <div class="catalog-group-head">
+          <div>
+            <h3>Speisen</h3>
+            <p>Aktive Gerichte aus der Menükarte.</p>
+          </div>
+          <span class="tag" id="foodCount">0 Artikel</span>
+        </div>
+        <div class="catalog-grid" id="foodCatalog"></div>
+      </div>
+
+      <div class="catalog-group">
+        <div class="catalog-group-head">
+          <div>
+            <h3>Getränke</h3>
+            <p>Die Getränke-Karte direkt aus dem Backend.</p>
+          </div>
+          <span class="tag" id="drinkCount">0 Artikel</span>
+        </div>
+        <div class="catalog-grid" id="drinkCatalog"></div>
+      </div>
+    </div>
+
+    <aside class="cart-panel">
+      <div class="cart-card">
+        <div class="cart-head">
+          <div>
+            <p class="admin-kicker">Warenkorb</p>
+            <h3>Deine Auswahl</h3>
+            <p class="lead">Hier siehst du die aktuell ausgewählten Positionen und die Demo-Summe.</p>
+          </div>
+          <button class="ghost-btn small-btn" id="clearCartButton" type="button">Leeren</button>
+        </div>
+
+        <div class="cart-list" id="cartList"></div>
+
+        <div class="order-summary">
+          <div class="order-summary-row">
+            <span>Zwischensumme</span>
+            <strong id="orderTotal">0,00 €</strong>
+          </div>
+          <div class="order-summary-row">
+            <span>Artikel</span>
+            <strong id="orderCount">0</strong>
+          </div>
+        </div>
+
+        <form class="order-form" id="orderForm">
+          <h3>Bestellung senden</h3>
+
+          <label>
+            Name
+            <input type="text" name="customer_name" placeholder="Dein Name" required>
+          </label>
+
+          <label>
+            Kontakt
+            <input type="text" name="customer_contact" placeholder="Telefon oder E-Mail" required>
+          </label>
+
+          <label>
+            Wunschzeit
+            <input type="text" name="pickup_time" placeholder="z. B. heute 18:30">
+          </label>
+
+          <label>
+            Notiz
+            <textarea name="notes" placeholder="z. B. ohne Zwiebeln, extra Servietten ..."></textarea>
+          </label>
+
+          <button class="btn" type="submit">Demo-Bestellung absenden</button>
+          <p class="status order-status" id="orderStatus"></p>
+        </form>
+      </div>
+
+      <p class="order-disclaimer">Hinweis: Diese Bestellung ist nur eine Demo. Nichts wird wirklich zubereitet oder ausgegeben, und wir unterstützen keine Lebensmittelverschwendung.</p>
+    </aside>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-row">
+    <p>&copy; 2026 Winkelwerk</p>
+    <a class="footer-admin-link" href="../admin/">Admin</a>
+  </div>
+</footer>
+
+<script>
+  const root = document.documentElement;
+  const appConfig = window.WINKELWERK_APP_CONFIG || {};
+  const themeToggle = document.getElementById("themeToggle");
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  const storageKey = "winkelwerk-desktop-theme";
+  const notificationKey = "winkelwerk-notifications-enabled";
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+  const notifyToggle = document.getElementById("notifyToggle");
+  const notifyStatus = document.getElementById("notifyStatus");
+  const notifyHint = document.getElementById("notifyHint");
+  const maintenanceScreen = document.getElementById("maintenanceScreen");
+  const maintenanceMessage = document.getElementById("maintenanceMessage");
+  const foodCatalog = document.getElementById("foodCatalog");
+  const drinkCatalog = document.getElementById("drinkCatalog");
+  const foodCount = document.getElementById("foodCount");
+  const drinkCount = document.getElementById("drinkCount");
+  const cartList = document.getElementById("cartList");
+  const orderForm = document.getElementById("orderForm");
+  const orderStatus = document.getElementById("orderStatus");
+  const clearCartButton = document.getElementById("clearCartButton");
+  const orderTotal = document.getElementById("orderTotal");
+  const orderCount = document.getElementById("orderCount");
+  const inboxUrl = new URL("../inbox/", window.location.href).href;
+  const defaultSiteSettings = {
+    maintenanceMode: false,
+    maintenanceMessage: "Website wird gerade bearbeitet. Bitte später erneut versuchen."
+  };
+  const defaultFoodItems = [
+    {
+      title: "Smashburger",
+      description: "Frisch gesmashtes Rindfleisch-Patty im weichen Bun mit hausgemachter Sauce.",
+      imageUrl: "https://oldworldgardenfarms.com/wp-content/uploads/2025/05/smashburger-735x735.jpg",
+      category: "Burger",
+      badge: "Beliebt",
+      price: "14,90 EUR",
+      priceValue: 14.9,
+      itemType: "food",
+      sortOrder: 1,
+      menuPeriods: ["lunch", "dinner"],
+      ctaLabel: "",
+      ctaUrl: ""
+    },
+    {
+      title: "Tandoori Chicken",
+      description: "Saftig mariniert und mit fein gerösteten Gewürzen serviert.",
+      imageUrl: "https://images.getrecipekit.com/20250721213330-Tandoori-Chicken-2.jpg?aspect_ratio=16:9&quality=90&",
+      category: "Signature",
+      badge: "Hausfavorit",
+      price: "16,90 EUR",
+      priceValue: 16.9,
+      itemType: "food",
+      sortOrder: 2,
+      menuPeriods: ["dinner"],
+      ctaLabel: "",
+      ctaUrl: ""
+    },
+    {
+      title: "Breakfast Plate",
+      description: "Ei, Brot, frischer Aufschnitt und kleine Extras für den perfekten Start.",
+      imageUrl: "https://images.unsplash.com/photo-1533089860892-a9b9c5f1c5f8?auto=format&fit=crop&w=1200&q=80",
+      category: "Frühstück",
+      badge: "Morgens",
+      price: "11,90 EUR",
+      priceValue: 11.9,
+      itemType: "food",
+      sortOrder: 3,
+      menuPeriods: ["breakfast"],
+      ctaLabel: "",
+      ctaUrl: ""
+    }
+  ];
+  const defaultDrinkItems = [
+    {
+      title: "Hauslimonade",
+      description: "Spritzig, frisch und mit feiner Zitrusnote.",
+      imageUrl: "https://images.unsplash.com/photo-1621263764928-df1444c5e859?auto=format&fit=crop&w=1200&q=80",
+      category: "Kalt",
+      badge: "Hausgemacht",
+      price: "4,90 EUR",
+      priceValue: 4.9,
+      itemType: "drink",
+      sortOrder: 101,
+      menuPeriods: ["all_day"],
+      ctaLabel: "",
+      ctaUrl: ""
+    },
+    {
+      title: "Espresso",
+      description: "Klein, stark und perfekt nach dem Essen.",
+      imageUrl: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&w=1200&q=80",
+      category: "Heiß",
+      badge: "Klassiker",
+      price: "2,80 EUR",
+      priceValue: 2.8,
+      itemType: "drink",
+      sortOrder: 102,
+      menuPeriods: ["all_day"],
+      ctaLabel: "",
+      ctaUrl: ""
+    },
+    {
+      title: "Cappuccino",
+      description: "Cremiger Espresso mit fein aufgeschäumter Milch.",
+      imageUrl: "https://images.unsplash.com/photo-1517701550927-30cf4ba1fe5f?auto=format&fit=crop&w=1200&q=80",
+      category: "Heiß",
+      badge: "Beliebt",
+      price: "3,90 EUR",
+      priceValue: 3.9,
+      itemType: "drink",
+      sortOrder: 103,
+      menuPeriods: ["all_day"],
+      ctaLabel: "",
+      ctaUrl: ""
+    }
+  ];
+  let serviceWorkerRegistrationPromise;
+  let catalogItems = [];
+  let cart = new Map();
+
+  function isDesktopDevice() {
+    return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  }
+
+  function getSystemTheme() {
+    return prefersDark.matches ? "dark" : "light";
+  }
+
+  function applyTheme(theme) {
+    const nextModeLabel = theme === "dark" ? "Hellmodus" : "Dunkelmodus";
+
+    root.setAttribute("data-theme", theme);
+
+    if (themeMeta) {
+      themeMeta.setAttribute("content", theme === "dark" ? "#0f1013" : "#ffffff");
+    }
+
+    if (themeToggle) {
+      themeToggle.textContent = nextModeLabel;
+      themeToggle.setAttribute("aria-label", "Zum " + nextModeLabel + " wechseln");
+    }
+  }
+
+  function syncThemeWithDevice() {
+    if (isDesktopDevice()) {
+      const savedTheme = localStorage.getItem(storageKey);
+      applyTheme(savedTheme || getSystemTheme());
+      return;
+    }
+
+    applyTheme(getSystemTheme());
+  }
+
+  function toggleMenu() {
+    if (window.matchMedia("(hover: hover)").matches) {
+      return;
+    }
+
+    document.getElementById("sideMenu").classList.toggle("open");
+  }
+
+  function notificationsSupported() {
+    return window.isSecureContext
+      && typeof Notification !== "undefined"
+      && "serviceWorker" in navigator
+      && "PushManager" in window;
+  }
+
+  function pushConfigReady() {
+    return Boolean(appConfig.pushApiBaseUrl && appConfig.vapidPublicKey);
+  }
+
+  function notificationsEnabled() {
+    return localStorage.getItem(notificationKey) === "on";
+  }
+
+  function normalizeApiBaseUrl() {
+    return String(appConfig.pushApiBaseUrl || "").replace(/\/+$/, "");
+  }
+
+  function menuApiConfigured() {
+    return Boolean(normalizeApiBaseUrl());
+  }
+
+  function normalizeSiteSettings(settings) {
+    return {
+      maintenanceMode: Boolean(settings && settings.maintenanceMode),
+      maintenanceMessage: String(
+        settings && settings.maintenanceMessage
+          ? settings.maintenanceMessage
+          : defaultSiteSettings.maintenanceMessage
+      ).trim() || defaultSiteSettings.maintenanceMessage
+    };
+  }
+
+  function applySiteSettings(settings) {
+    const normalized = normalizeSiteSettings(settings);
+
+    if (maintenanceMessage) {
+      maintenanceMessage.textContent = normalized.maintenanceMessage;
+    }
+
+    document.body.classList.toggle("site-maintenance-active", normalized.maintenanceMode);
+
+    if (maintenanceScreen) {
+      maintenanceScreen.setAttribute("aria-hidden", normalized.maintenanceMode ? "false" : "true");
+    }
+  }
+
+  function parsePriceValue(value) {
+    const normalized = String(value || "")
+      .replace(/[^\d,.-]/g, "")
+      .replace(",", ".");
+    const parsed = Number.parseFloat(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  function normalizeCatalogItem(item, fallbackType) {
+    const itemType = String(item && item.itemType ? item.itemType : fallbackType || "food").trim().toLowerCase();
+
+    return {
+      id: String(item && item.id ? item.id : item && item.title ? item.title + "-" + itemType : "").trim(),
+      title: String(item && item.title ? item.title : "").trim(),
+      description: String(item && item.description ? item.description : "").trim(),
+      imageUrl: String(item && item.imageUrl ? item.imageUrl : "").trim(),
+      category: String(item && item.category ? item.category : "").trim(),
+      badge: String(item && item.badge ? item.badge : "").trim(),
+      price: String(item && item.price ? item.price : "").trim(),
+      priceValue: Number.isFinite(Number(item && item.priceValue)) ? Number(item.priceValue) : parsePriceValue(item && item.price),
+      ctaLabel: String(item && item.ctaLabel ? item.ctaLabel : "").trim(),
+      ctaUrl: String(item && item.ctaUrl ? item.ctaUrl : "").trim(),
+      itemType: itemType === "drink" ? "drink" : "food",
+      sortOrder: Number.isFinite(Number(item && item.sortOrder)) ? Number(item.sortOrder) : 0
+    };
+  }
+
+  function resolvePublicUrl(value) {
+    const raw = String(value || "").trim();
+
+    if (!raw) {
+      return "";
+    }
+
+    try {
+      const url = new URL(raw, window.location.href);
+
+      if (url.protocol === "http:" || url.protocol === "https:") {
+        return url.href;
+      }
+    } catch (error) {
+      return "";
+    }
+
+    return "";
+  }
+
+  function formatCurrency(value) {
+    const amount = Number(value);
+    const safeAmount = Number.isFinite(amount) ? amount : 0;
+
+    return new Intl.NumberFormat("de-DE", {
+      style: "currency",
+      currency: "EUR"
+    }).format(safeAmount);
+  }
+
+  function setStatus(message, type) {
+    orderStatus.textContent = message;
+    orderStatus.className = "status order-status" + (type ? " " + type : "");
+  }
+
+  function createMenuTag(label) {
+    const tag = document.createElement("span");
+    tag.className = "menu-card-tag";
+    tag.textContent = label;
+    return tag;
+  }
+
+  function getCartQuantity(itemId) {
+    const item = cart.get(String(itemId));
+    return item ? Number(item.quantity || 0) : 0;
+  }
+
+  function getCatalogItemById(itemId) {
+    return catalogItems.find(function (item) {
+      return String(item.id) === String(itemId);
+    }) || null;
+  }
+
+  function upsertCartItem(item, quantityDelta) {
+    if (!item) {
+      return;
+    }
+
+    const current = cart.get(item.id);
+    const nextQuantity = (current ? Number(current.quantity || 0) : 0) + quantityDelta;
+
+    if (nextQuantity <= 0) {
+      cart.delete(item.id);
+    } else {
+      cart.set(item.id, Object.assign({}, item, {
+        quantity: nextQuantity
+      }));
+    }
+
+    renderCatalog();
+    renderCart();
+  }
+
+  function addItemToCart(itemId) {
+    const item = getCatalogItemById(itemId);
+    upsertCartItem(item, 1);
+  }
+
+  function decreaseItemInCart(itemId) {
+    const item = getCatalogItemById(itemId);
+    upsertCartItem(item, -1);
+  }
+
+  function removeItemFromCart(itemId) {
+    cart.delete(String(itemId));
+    renderCatalog();
+    renderCart();
+  }
+
+  function clearCart() {
+    cart = new Map();
+    renderCatalog();
+    renderCart();
+  }
+
+  function getCartItems() {
+    return Array.from(cart.values());
+  }
+
+  function getCartSummary() {
+    return getCartItems().reduce(function (summary, item) {
+      const quantity = Number(item.quantity || 0);
+      const priceValue = Number.isFinite(Number(item.priceValue)) ? Number(item.priceValue) : parsePriceValue(item.price);
+      const lineTotal = quantity * priceValue;
+
+      summary.total += lineTotal;
+      summary.quantity += quantity;
+
+      return summary;
+    }, {
+      total: 0,
+      quantity: 0
+    });
+  }
+
+  function createCatalogCard(item) {
+    const article = document.createElement("article");
+    article.className = "card menu-card catalog-card";
+
+    const imageUrl = resolvePublicUrl(item.imageUrl);
+
+    if (imageUrl) {
+      const image = document.createElement("img");
+      image.src = imageUrl;
+      image.alt = item.title || "Menü-Eintrag";
+      article.appendChild(image);
+    }
+
+    const body = document.createElement("div");
+    body.className = "menu-card-body";
+
+    const header = document.createElement("div");
+    header.className = "menu-card-header";
+
+    const title = document.createElement("h3");
+    title.className = "menu-card-title";
+    title.textContent = item.title || "Ohne Titel";
+    header.appendChild(title);
+
+    if (item.price) {
+      const price = document.createElement("span");
+      price.className = "menu-card-price";
+      price.textContent = item.price;
+      header.appendChild(price);
+    }
+
+    body.appendChild(header);
+
+    const tags = document.createElement("div");
+    tags.className = "menu-card-tags";
+
+    if (item.category) {
+      tags.appendChild(createMenuTag(item.category));
+    }
+
+    if (item.badge) {
+      tags.appendChild(createMenuTag(item.badge));
+    }
+
+    tags.appendChild(createMenuTag(item.itemType === "drink" ? "Getränk" : "Speise"));
+    body.appendChild(tags);
+
+    const description = document.createElement("p");
+    description.className = "menu-card-description";
+    description.textContent = item.description;
+    body.appendChild(description);
+
+    const actions = document.createElement("div");
+    actions.className = "catalog-card-actions";
+
+    const quantity = getCartQuantity(item.id);
+
+    if (quantity > 0) {
+      const control = document.createElement("div");
+      control.className = "quantity-control";
+
+      const minus = document.createElement("button");
+      minus.type = "button";
+      minus.className = "ghost-btn quantity-button";
+      minus.dataset.action = "decrement";
+      minus.dataset.id = item.id;
+      minus.textContent = "−";
+
+      const value = document.createElement("span");
+      value.className = "quantity-value";
+      value.textContent = String(quantity);
+
+      const plus = document.createElement("button");
+      plus.type = "button";
+      plus.className = "ghost-btn quantity-button";
+      plus.dataset.action = "increment";
+      plus.dataset.id = item.id;
+      plus.textContent = "+";
+
+      control.appendChild(minus);
+      control.appendChild(value);
+      control.appendChild(plus);
+      actions.appendChild(control);
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "ghost-btn";
+      remove.dataset.action = "remove";
+      remove.dataset.id = item.id;
+      remove.textContent = "Entfernen";
+      actions.appendChild(remove);
+    } else {
+      const add = document.createElement("button");
+      add.type = "button";
+      add.className = "btn";
+      add.dataset.action = "add";
+      add.dataset.id = item.id;
+      add.textContent = "In den Warenkorb";
+      actions.appendChild(add);
+    }
+
+    body.appendChild(actions);
+    article.appendChild(body);
+    return article;
+  }
+
+  function renderCatalogGroup(target, items) {
+    if (!target) {
+      return;
+    }
+
+    target.replaceChildren();
+
+    const sortedItems = items.slice().sort(function (a, b) {
+      return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+    });
+
+    const fragment = document.createDocumentFragment();
+
+    sortedItems.forEach(function (item) {
+      fragment.appendChild(createCatalogCard(item));
+    });
+
+    target.appendChild(fragment);
+  }
+
+  function updateGroupCounts() {
+    if (foodCount) {
+      foodCount.textContent = catalogItems.filter(function (item) {
+        return item.itemType === "food";
+      }).length + " Artikel";
+    }
+
+    if (drinkCount) {
+      drinkCount.textContent = catalogItems.filter(function (item) {
+        return item.itemType === "drink";
+      }).length + " Artikel";
+    }
+  }
+
+  function renderCatalog() {
+    const foodItems = catalogItems.filter(function (item) {
+      return item.itemType === "food";
+    });
+
+    const drinkItems = catalogItems.filter(function (item) {
+      return item.itemType === "drink";
+    });
+
+    renderCatalogGroup(foodCatalog, foodItems);
+    renderCatalogGroup(drinkCatalog, drinkItems);
+    updateGroupCounts();
+  }
+
+  function renderCart() {
+    if (!cartList || !orderTotal || !orderCount) {
+      return;
+    }
+
+    const items = getCartItems();
+    const summary = getCartSummary();
+
+    cartList.replaceChildren();
+
+    if (!items.length) {
+      const empty = document.createElement("div");
+      empty.className = "order-empty";
+      empty.textContent = "Der Warenkorb ist noch leer. Füge links ein paar Positionen hinzu.";
+      cartList.appendChild(empty);
+    } else {
+      items.forEach(function (item) {
+        const quantity = Number(item.quantity || 0);
+        const priceValue = Number.isFinite(Number(item.priceValue)) ? Number(item.priceValue) : parsePriceValue(item.price);
+        const lineTotal = quantity * priceValue;
+
+        const article = document.createElement("article");
+        article.className = "cart-item";
+
+        const top = document.createElement("div");
+        top.className = "cart-item-top";
+
+        const textWrap = document.createElement("div");
+        const title = document.createElement("strong");
+        title.textContent = item.title || "Ohne Titel";
+        const meta = document.createElement("p");
+        meta.className = "cart-item-meta";
+        meta.textContent = quantity + " × " + formatCurrency(priceValue) + " · " + (item.itemType === "drink" ? "Getränk" : "Speise");
+        textWrap.appendChild(title);
+        textWrap.appendChild(meta);
+
+        const lineTotalLabel = document.createElement("strong");
+        lineTotalLabel.textContent = formatCurrency(lineTotal);
+
+        top.appendChild(textWrap);
+        top.appendChild(lineTotalLabel);
+        article.appendChild(top);
+
+        const actions = document.createElement("div");
+        actions.className = "cart-item-actions";
+
+        const minus = document.createElement("button");
+        minus.type = "button";
+        minus.className = "ghost-btn small-btn";
+        minus.dataset.action = "decrement";
+        minus.dataset.id = item.id;
+        minus.textContent = "−";
+
+        const plus = document.createElement("button");
+        plus.type = "button";
+        plus.className = "ghost-btn small-btn";
+        plus.dataset.action = "increment";
+        plus.dataset.id = item.id;
+        plus.textContent = "+";
+
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "ghost-btn small-btn";
+        remove.dataset.action = "remove";
+        remove.dataset.id = item.id;
+        remove.textContent = "Entfernen";
+
+        actions.appendChild(minus);
+        actions.appendChild(plus);
+        actions.appendChild(remove);
+        article.appendChild(actions);
+
+        cartList.appendChild(article);
+      });
+    }
+
+    orderTotal.textContent = formatCurrency(summary.total);
+    orderCount.textContent = String(summary.quantity);
+  }
+
+  async function loadSiteSettings() {
+    if (!menuApiConfigured()) {
+      applySiteSettings(defaultSiteSettings);
+      return defaultSiteSettings;
+    }
+
+    try {
+      const response = await fetch(normalizeApiBaseUrl() + "/site-settings", {
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Site settings request failed");
+      }
+
+      const result = await response.json();
+      const settings = normalizeSiteSettings(result && result.settings ? result.settings : defaultSiteSettings);
+      applySiteSettings(settings);
+      return settings;
+    } catch (error) {
+      console.log(error);
+      applySiteSettings(defaultSiteSettings);
+      return defaultSiteSettings;
+    }
+  }
+
+  async function loadCatalogItems(path, fallbackItems) {
+    if (!menuApiConfigured()) {
+      return fallbackItems.slice().map(function (item) {
+        return normalizeCatalogItem(item, item.itemType || "food");
+      });
+    }
+
+    const response = await fetch(normalizeApiBaseUrl() + path, {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Catalog request failed");
+    }
+
+    const result = await response.json();
+    const items = Array.isArray(result && result.items) ? result.items : [];
+
+    return items.length
+      ? items.map(function (item) {
+        return normalizeCatalogItem(item, path === "/drinks" ? "drink" : "food");
+      })
+      : fallbackItems.slice().map(function (item) {
+        return normalizeCatalogItem(item, item.itemType || "food");
+      });
+  }
+
+  async function loadCatalog() {
+    try {
+      const [foodResult, drinkResult] = await Promise.allSettled([
+        loadCatalogItems("/menu", defaultFoodItems),
+        loadCatalogItems("/drinks", defaultDrinkItems)
+      ]);
+
+      const foodItems = foodResult.status === "fulfilled" ? foodResult.value : defaultFoodItems.map(function (item) {
+        return normalizeCatalogItem(item, "food");
+      });
+      const drinkItems = drinkResult.status === "fulfilled" ? drinkResult.value : defaultDrinkItems.map(function (item) {
+        return normalizeCatalogItem(item, "drink");
+      });
+
+      catalogItems = foodItems.concat(drinkItems).filter(function (item) {
+        return item.title && item.description;
+      });
+
+      renderCatalog();
+      renderCart();
+    } catch (error) {
+      console.log(error);
+      catalogItems = defaultFoodItems.map(function (item) {
+        return normalizeCatalogItem(item, "food");
+      }).concat(defaultDrinkItems.map(function (item) {
+        return normalizeCatalogItem(item, "drink");
+      }));
+      renderCatalog();
+      renderCart();
+    }
+  }
+
+  function vapidKeyToUint8Array(base64String) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const safeBase64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const raw = window.atob(safeBase64);
+    const output = new Uint8Array(raw.length);
+
+    for (let index = 0; index < raw.length; index += 1) {
+      output[index] = raw.charCodeAt(index);
+    }
+
+    return output;
+  }
+
+  async function getServiceWorkerRegistration() {
+    if (!notificationsSupported()) {
+      return null;
+    }
+
+    if (!serviceWorkerRegistrationPromise) {
+      serviceWorkerRegistrationPromise = navigator.serviceWorker.register("../service-worker.js", {
+        scope: "../"
+      });
+    }
+
+    return serviceWorkerRegistrationPromise;
+  }
+
+  async function postPushJson(path, payload) {
+    const response = await fetch(normalizeApiBaseUrl() + path, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Push request failed");
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    return contentType.includes("application/json") ? response.json() : null;
+  }
+
+  async function postOrderJson(payload) {
+    const response = await fetch(normalizeApiBaseUrl() + "/orders", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Order request failed");
+    }
+
+    return response.json();
+  }
+
+  async function getCurrentPushSubscription() {
+    if (!notificationsSupported()) {
+      return null;
+    }
+
+    const registration = await getServiceWorkerRegistration();
+    return registration ? registration.pushManager.getSubscription() : null;
+  }
+
+  async function saveInboxMessage(payload) {
+    if (!("serviceWorker" in navigator)) {
+      return;
+    }
+
+    const registration = await getServiceWorkerRegistration();
+
+    if (registration && registration.active) {
+      registration.active.postMessage({
+        type: "SAVE_INBOX_MESSAGE",
+        payload
+      });
+    }
+  }
+
+  function setNotificationUi(mode, statusText, hintHtml) {
+    notifyToggle.dataset.state = mode === "on" ? "on" : "off";
+    notifyToggle.setAttribute("aria-pressed", mode === "on" ? "true" : "false");
+    notifyStatus.textContent = statusText;
+    notifyHint.innerHTML = hintHtml;
+  }
+
+  async function updateNotificationUi() {
+    if (!notificationsSupported()) {
+      notifyToggle.disabled = true;
+      setNotificationUi(
+        "off",
+        "Nicht verfügbar",
+        "Push braucht HTTPS, Service Worker und einen unterstützten Browser."
+      );
+      return;
+    }
+
+    if (!pushConfigReady()) {
+      notifyToggle.disabled = true;
+      setNotificationUi(
+        "off",
+        "Setup fehlt",
+        "Trage zuerst die Backend-URL und den VAPID-Key in <code>../app-config.js</code> ein."
+      );
+      return;
+    }
+
+    const subscription = await getCurrentPushSubscription();
+    const enabled = Boolean(subscription) && Notification.permission === "granted";
+    localStorage.setItem(notificationKey, enabled ? "on" : "off");
+    notifyToggle.disabled = false;
+
+    if (enabled) {
+      setNotificationUi(
+        "on",
+        "An",
+        "Interne Hinweise sind aktiv. Neue Nachrichten landen auch im <a href=\"../inbox/\">Postfach</a>."
+      );
+      return;
+    }
+
+    if (Notification.permission === "denied") {
+      setNotificationUi(
+        "off",
+        "Blockiert",
+        "Der Browser blockiert Push. Erlaube Benachrichtigungen in den Browser-Einstellungen."
+      );
+      return;
+    }
+
+    setNotificationUi(
+      "off",
+      "Aus",
+      "Aktiviert Web-Push für interne Winkelwerk-Nachrichten auf diesem Gerät."
+    );
+  }
+
+  async function enableNotifications() {
+    if (!notificationsSupported() || !pushConfigReady()) {
+      await updateNotificationUi();
+      return;
+    }
+
+    let permission = Notification.permission;
+
+    if (permission !== "granted") {
+      permission = await Notification.requestPermission();
+    }
+
+    if (permission !== "granted") {
+      localStorage.setItem(notificationKey, "off");
+      await updateNotificationUi();
+      return;
+    }
+
+    try {
+      const registration = await getServiceWorkerRegistration();
+      let subscription = await registration.pushManager.getSubscription();
+
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: vapidKeyToUint8Array(String(appConfig.vapidPublicKey))
+        });
+      }
+
+      await postPushJson("/subscribe", {
+        subscription: subscription.toJSON(),
+        site: window.location.origin,
+        page: window.location.pathname,
+        userAgent: navigator.userAgent
+      });
+
+      localStorage.setItem(notificationKey, "on");
+      await saveInboxMessage({
+        id: "local-" + Date.now(),
+        title: "Winkelwerk",
+        body: "Push ist jetzt auf diesem Gerät aktiviert.",
+        url: inboxUrl,
+        sentAt: new Date().toISOString(),
+        source: "system"
+      });
+
+      await registration.showNotification("Winkelwerk", {
+        body: "Push ist jetzt auf diesem Gerät aktiviert.",
+        icon: "../apple-touch-icon.png",
+        badge: "../icon-192.png",
+        data: {
+          url: inboxUrl
+        }
+      });
+    } catch (error) {
+      console.log(error);
+      localStorage.setItem(notificationKey, "off");
+      setNotificationUi(
+        "off",
+        "Fehler",
+        "Die Push-Anmeldung hat nicht funktioniert. Prüfe Backend, VAPID-Key und HTTPS."
+      );
+      return;
+    }
+
+    await updateNotificationUi();
+  }
+
+  async function disableNotifications() {
+    try {
+      const subscription = await getCurrentPushSubscription();
+
+      if (subscription) {
+        await postPushJson("/unsubscribe", {
+          endpoint: subscription.endpoint
+        });
+
+        await subscription.unsubscribe();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+
+    localStorage.setItem(notificationKey, "off");
+    await updateNotificationUi();
+  }
+
+  themeToggle.addEventListener("click", function () {
+    const nextTheme = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    localStorage.setItem(storageKey, nextTheme);
+    applyTheme(nextTheme);
+  });
+
+  notifyToggle.addEventListener("click", async function () {
+    if (notificationsEnabled()) {
+      await disableNotifications();
+      return;
+    }
+
+    await enableNotifications();
+  });
+
+  function handleSystemThemeChange() {
+    if (!isDesktopDevice() || !localStorage.getItem(storageKey)) {
+      applyTheme(getSystemTheme());
+    }
+  }
+
+  if (typeof prefersDark.addEventListener === "function") {
+    prefersDark.addEventListener("change", handleSystemThemeChange);
+  } else if (typeof prefersDark.addListener === "function") {
+    prefersDark.addListener(handleSystemThemeChange);
+  }
+
+  foodCatalog.addEventListener("click", function (event) {
+    const button = event.target.closest("button[data-action]");
+
+    if (!button) {
+      return;
+    }
+
+    const action = button.dataset.action;
+    const itemId = button.dataset.id;
+
+    if (action === "add" || action === "increment") {
+      addItemToCart(itemId);
+      return;
+    }
+
+    if (action === "decrement") {
+      decreaseItemInCart(itemId);
+      return;
+    }
+
+    if (action === "remove") {
+      removeItemFromCart(itemId);
+    }
+  });
+
+  drinkCatalog.addEventListener("click", function (event) {
+    const button = event.target.closest("button[data-action]");
+
+    if (!button) {
+      return;
+    }
+
+    const action = button.dataset.action;
+    const itemId = button.dataset.id;
+
+    if (action === "add" || action === "increment") {
+      addItemToCart(itemId);
+      return;
+    }
+
+    if (action === "decrement") {
+      decreaseItemInCart(itemId);
+      return;
+    }
+
+    if (action === "remove") {
+      removeItemFromCart(itemId);
+    }
+  });
+
+  cartList.addEventListener("click", function (event) {
+    const button = event.target.closest("button[data-action]");
+
+    if (!button) {
+      return;
+    }
+
+    const action = button.dataset.action;
+    const itemId = button.dataset.id;
+
+    if (action === "increment") {
+      addItemToCart(itemId);
+      return;
+    }
+
+    if (action === "decrement") {
+      decreaseItemInCart(itemId);
+      return;
+    }
+
+    if (action === "remove") {
+      removeItemFromCart(itemId);
+    }
+  });
+
+  clearCartButton.addEventListener("click", function () {
+    clearCart();
+  });
+
+  orderForm.addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    const items = getCartItems();
+
+    if (!items.length) {
+      setStatus("Bitte zuerst mindestens eine Position in den Warenkorb legen.", "warning");
+      return;
+    }
+
+    if (!menuApiConfigured()) {
+      setStatus("Das Backend ist noch nicht verbunden. Bitte trage zuerst die API-URL in app-config.js ein.", "warning");
+      return;
+    }
+
+    const formData = new FormData(orderForm);
+    const customerName = String(formData.get("customer_name") || "").trim();
+    const customerContact = String(formData.get("customer_contact") || "").trim();
+    const pickupTime = String(formData.get("pickup_time") || "").trim();
+    const notes = String(formData.get("notes") || "").trim();
+
+    if (!customerName || !customerContact) {
+      setStatus("Name und Kontakt sind Pflichtfelder.", "warning");
+      return;
+    }
+
+    const payloadItems = items.map(function (item) {
+      const quantity = Number(item.quantity || 0);
+      const priceValue = Number.isFinite(Number(item.priceValue)) ? Number(item.priceValue) : parsePriceValue(item.price);
+      const lineTotalValue = quantity * priceValue;
+
+      return {
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        category: item.category,
+        badge: item.badge,
+        itemType: item.itemType,
+        quantity: quantity,
+        priceText: item.price,
+        priceValue: priceValue,
+        lineTotalText: formatCurrency(lineTotalValue),
+        lineTotalValue: lineTotalValue
+      };
+    });
+
+    const summary = getCartSummary();
+
+    setStatus("Bestellung wird gespeichert ...", "");
+
+    try {
+      const result = await postOrderJson({
+        customerName: customerName,
+        customerContact: customerContact,
+        pickupTime: pickupTime,
+        notes: notes,
+        items: payloadItems,
+        totalText: formatCurrency(summary.total),
+        totalValue: summary.total,
+        sourcePage: window.location.pathname
+      });
+
+      const orderId = result && result.order ? result.order.id : null;
+      setStatus("Demo-Bestellung erfolgreich gespeichert" + (orderId ? " (ID " + orderId + ")" : "") + ".", "success");
+      orderForm.reset();
+      clearCart();
+    } catch (error) {
+      console.log(error);
+      setStatus("Bestellung konnte nicht gespeichert werden. Bitte Backend und API prüfen.", "error");
+    }
+  });
+
+  window.addEventListener("resize", syncThemeWithDevice);
+  window.addEventListener("focus", function () {
+    updateNotificationUi();
+  });
+  syncThemeWithDevice();
+  updateNotificationUi();
+  loadSiteSettings();
+  loadCatalog();
+</script>
+
+</body>
+</html>
