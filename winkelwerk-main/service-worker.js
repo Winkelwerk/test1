@@ -1,4 +1,4 @@
-const CACHE_NAME = "winkelwerk-shell-v5";
+const CACHE_NAME = "winkelwerk-shell-v6";
 const DB_NAME = "winkelwerk-inbox";
 const STORE_NAME = "messages";
 const MAX_MESSAGES = 40;
@@ -10,8 +10,13 @@ const APP_SHELL = [
   "./icon-192.png",
   "./icon-512.png",
   "./winkelwerlk.png",
+  "./style.css",
   "./men%C3%BC/",
   "./men%C3%BC/index.html",
+  "./getr%C3%A4nke/",
+  "./getr%C3%A4nke/index.html",
+  "./bestellen/",
+  "./bestellen/index.html",
   "./inbox/",
   "./inbox/index.html",
   "./admin/",

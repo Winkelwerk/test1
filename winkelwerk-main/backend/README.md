@@ -20,17 +20,29 @@ Offizielle Infos:
 ## Was in diesem Ordner schon fertig ist
 
 - `supabase/migrations/20260427_push.sql`
-  Das Datenbankschema fuer Push-Abos, interne Nachrichten und das Website-Menue
+  Das Datenbankschema fuer Push-Abos und interne Nachrichten
+- `supabase/migrations/20260428204158_new-migration.sql`
+  Das Datenbankschema fuer das Website-Menue
 - `supabase/migrations/20260429_site_settings.sql`
   Das Datenbankschema fuer globale Website-Einstellungen wie Wartungsmodus
+- `supabase/migrations/20260525180000_menu_periods.sql`
+  Erweitert das Website-Menue um Zeitfenster wie Fruehstueck, Mittag und Abend
+- `supabase/migrations/20260525193000_menu_period_arrays.sql`
+  Erweitert die Zeitfenster auf Mehrfachauswahl wie Mittag und Abend gleichzeitig
+- `supabase/migrations/20260605190000_menu_item_types_orders.sql`
+  Fuegt `item_type` fuer Speisen und Getraenke hinzu und legt die Bestell-Tabelle an
 - `supabase/functions/push-api/index.ts`
   Die HTTP-API fuer
   - `GET /menu`
+  - `GET /drinks`
   - `GET /site-settings`
   - `GET /menu-admin`
+  - `GET /orders-admin`
   - `GET /site-settings-admin`
   - `GET /subscriptions-admin`
   - `POST /menu-admin`
+  - `POST /orders`
+  - `POST /orders-admin`
   - `POST /site-settings-admin`
   - `POST /subscriptions-admin`
   - `POST /subscribe`

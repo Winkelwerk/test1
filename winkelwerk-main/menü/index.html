@@ -587,6 +587,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="../style.css">
 </head>
 
 <body>
@@ -605,6 +606,8 @@
 <nav id="sideMenu">
   <a href="../" onclick="toggleMenu()">Startseite</a>
   <a href="./" onclick="toggleMenu()">Men&uuml;</a>
+  <a href="../getr%C3%A4nke/" onclick="toggleMenu()">Getr&auml;nke</a>
+  <a href="../bestellen/" onclick="toggleMenu()">Bestellen</a>
   <a href="../#about" onclick="toggleMenu()">&Uuml;ber uns</a>
   <a href="../#contact" onclick="toggleMenu()">Kontakt</a>
   <a href="../#location" onclick="toggleMenu()">Standort</a>
@@ -624,7 +627,11 @@
   <div class="hero-content">
     <h1>Unser Men&uuml;</h1>
     <p>Alle Gerichte zentral aus dem Adminbereich gepflegt, auf einer eigenen Seite für den klaren Fokus aufs Essen.</p>
-    <a class="btn" href="../#contact">Jetzt reservieren</a>
+    <div class="hero-actions">
+      <a class="btn" href="../bestellen/">Jetzt bestellen</a>
+      <a class="ghost-btn" href="../getr%C3%A4nke/">Getr&auml;nke ansehen</a>
+      <a class="ghost-btn" href="../#contact">Reservieren</a>
+    </div>
   </div>
 </header>
 
@@ -670,6 +677,7 @@
       category: "Burger",
       badge: "Beliebt",
       price: "",
+      menuPeriods: ["all_day"],
       ctaLabel: "",
       ctaUrl: ""
     },
@@ -680,10 +688,26 @@
       category: "Signature",
       badge: "",
       price: "",
+      menuPeriods: ["all_day"],
       ctaLabel: "",
       ctaUrl: ""
     }
   ];
+  const menuPeriods = {
+    breakfast: {
+      startMinutes: 9 * 60,
+      endMinutes: 12 * 60
+    },
+    lunch: {
+      startMinutes: 12 * 60,
+      endMinutes: 17 * 60
+    },
+    dinner: {
+      startMinutes: 17 * 60,
+      endMinutes: 21 * 60
+    }
+  };
+  const scheduledMenuPeriods = ["breakfast", "lunch", "dinner"];
   let serviceWorkerRegistrationPromise;
 
   function isDesktopDevice() {
@@ -776,6 +800,8 @@
   }
 
   function normalizeMenuItem(item) {
+    const normalizedPeriods = normalizeMenuPeriods(item && (item.menuPeriods || item.menuPeriod));
+
     return {
       title: String(item && item.title ? item.title : "").trim(),
       description: String(item && item.description ? item.description : "").trim(),
@@ -783,9 +809,71 @@
       category: String(item && item.category ? item.category : "").trim(),
       badge: String(item && item.badge ? item.badge : "").trim(),
       price: String(item && item.price ? item.price : "").trim(),
+      menuPeriod: normalizedPeriods[0] || "all_day",
+      menuPeriods: normalizedPeriods,
       ctaLabel: String(item && item.ctaLabel ? item.ctaLabel : "").trim(),
       ctaUrl: String(item && item.ctaUrl ? item.ctaUrl : "").trim()
     };
+  }
+
+  function normalizeMenuPeriods(value) {
+    const rawValues = Array.isArray(value)
+      ? value
+      : typeof value === "string"
+        ? String(value).replace(/^\{|\}$/g, "").split(",")
+        : [value];
+
+    const uniqueValues = Array.from(new Set(
+      rawValues
+        .map(function (item) {
+          return String(item || "").trim().toLowerCase();
+        })
+        .filter(function (item) {
+          return ["all_day", "breakfast", "lunch", "dinner"].includes(item);
+        })
+    ));
+
+    if (!uniqueValues.length || uniqueValues.includes("all_day")) {
+      return ["all_day"];
+    }
+
+    return ["breakfast", "lunch", "dinner"].filter(function (item) {
+      return uniqueValues.includes(item);
+    });
+  }
+
+  function getBerlinMinutesOfDay() {
+    const formatter = new Intl.DateTimeFormat("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "Europe/Berlin"
+    });
+    const parts = formatter.formatToParts(new Date());
+    const hour = Number(parts.find(function (part) {
+      return part.type === "hour";
+    })?.value || 0);
+    const minute = Number(parts.find(function (part) {
+      return part.type === "minute";
+    })?.value || 0);
+    return (hour * 60) + minute;
+  }
+
+  function getActiveScheduledMenuPeriod() {
+    const currentMinutes = getBerlinMinutesOfDay();
+
+    return scheduledMenuPeriods.find(function (key) {
+      const period = menuPeriods[key];
+      return currentMinutes >= period.startMinutes && currentMinutes < period.endMinutes;
+    }) || null;
+  }
+
+  function filterMenuItemsByCurrentTime(items) {
+    const activePeriodKey = getActiveScheduledMenuPeriod();
+    return items.filter(function (item) {
+      const periods = normalizeMenuPeriods(item.menuPeriods || item.menuPeriod);
+      return periods.includes("all_day") || (Boolean(activePeriodKey) && periods.includes(activePeriodKey));
+    });
   }
 
   function resolvePublicUrl(value) {
@@ -894,16 +982,17 @@
         return item.title && item.description;
       });
 
+    const timedMenuItems = filterMenuItemsByCurrentTime(normalizedItems);
     menuGrid.replaceChildren();
 
-    if (!normalizedItems.length) {
+    if (!timedMenuItems.length) {
       setMenuState(emptyMessage || "Unser Menü wird gerade aktualisiert.", false);
       return;
     }
 
     const fragment = document.createDocumentFragment();
 
-    normalizedItems.forEach(function (item) {
+    timedMenuItems.forEach(function (item) {
       fragment.appendChild(createMenuCard(item));
     });
 
