@@ -92,7 +92,6 @@ create index if not exists order_requests_status_idx
   on public.order_requests (status, created_at desc);
 
 insert into public.menu_items (
-  id,
   title,
   description,
   image_url,
@@ -107,85 +106,114 @@ insert into public.menu_items (
   menu_period,
   menu_periods
 )
-values
-  (
-    '11111111-1111-1111-1111-111111111101',
-    'Hauslimonade',
-    'Spritzig, frisch und mit feiner Zitrusnote.',
-    'https://images.unsplash.com/photo-1621263764928-df1444c5e859?auto=format&fit=crop&w=1200&q=80',
-    '4,90 EUR',
-    'Kalt',
-    'Hausgemacht',
-    null,
-    null,
-    100,
-    true,
-    'drink',
-    'all_day',
-    array['all_day']::text[]
-  ),
-  (
-    '11111111-1111-1111-1111-111111111102',
-    'Espresso',
-    'Klein, stark und perfekt nach dem Essen.',
-    'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&w=1200&q=80',
-    '2,80 EUR',
-    'Heiss',
-    'Klassiker',
-    null,
-    null,
-    101,
-    true,
-    'drink',
-    'all_day',
-    array['all_day']::text[]
-  ),
-  (
-    '11111111-1111-1111-1111-111111111103',
-    'Cappuccino',
-    'Cremiger Espresso mit fein aufgeschäumter Milch.',
-    'https://images.unsplash.com/photo-1517701550927-30cf4ba1fe5f?auto=format&fit=crop&w=1200&q=80',
-    '3,90 EUR',
-    'Heiss',
-    'Beliebt',
-    null,
-    null,
-    102,
-    true,
-    'drink',
-    'all_day',
-    array['all_day']::text[]
-  ),
-  (
-    '11111111-1111-1111-1111-111111111104',
-    'Ingwer-Zitrus-Spritz',
-    'Leicht scharf, frisch und schön sprudelnd.',
-    'https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=1200&q=80',
-    '5,50 EUR',
-    'Mocktail',
-    'Neu',
-    null,
-    null,
-    103,
-    true,
-    'drink',
-    'all_day',
-    array['all_day']::text[]
-  ),
-  (
-    '11111111-1111-1111-1111-111111111105',
-    'Tonic Berry',
-    'Beerig, herb und perfekt für warme Abende.',
-    'https://images.unsplash.com/photo-1505224522996-4b2f9bf7f6c5?auto=format&fit=crop&w=1200&q=80',
-    '6,20 EUR',
-    'Signature',
-    'Hausbar',
-    null,
-    null,
-    104,
-    true,
-    'drink',
-    'all_day',
-    array['all_day']::text[]
-  )
-on conflict (id) do nothing;
+select
+  v.title,
+  v.description,
+  v.image_url,
+  v.price,
+  v.category,
+  v.badge,
+  v.cta_label,
+  v.cta_url,
+  v.sort_order,
+  v.is_active,
+  v.item_type,
+  v.menu_period,
+  v.menu_periods
+from (
+  values
+    (
+      'Hauslimonade',
+      'Spritzig, frisch und mit feiner Zitrusnote.',
+      'https://images.unsplash.com/photo-1621263764928-df1444c5e859?auto=format&fit=crop&w=1200&q=80',
+      '4,90 EUR',
+      'Kalt',
+      'Hausgemacht',
+      null,
+      null,
+      100,
+      true,
+      'drink',
+      'all_day',
+      array['all_day']::text[]
+    ),
+    (
+      'Espresso',
+      'Klein, stark und perfekt nach dem Essen.',
+      'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&w=1200&q=80',
+      '2,80 EUR',
+      'Heiss',
+      'Klassiker',
+      null,
+      null,
+      101,
+      true,
+      'drink',
+      'all_day',
+      array['all_day']::text[]
+    ),
+    (
+      'Cappuccino',
+      'Cremiger Espresso mit fein aufgeschÃ¤umter Milch.',
+      'https://images.unsplash.com/photo-1517701550927-30cf4ba1fe5f?auto=format&fit=crop&w=1200&q=80',
+      '3,90 EUR',
+      'Heiss',
+      'Beliebt',
+      null,
+      null,
+      102,
+      true,
+      'drink',
+      'all_day',
+      array['all_day']::text[]
+    ),
+    (
+      'Ingwer-Zitrus-Spritz',
+      'Leicht scharf, frisch und schÃ¶n sprudelnd.',
+      'https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=1200&q=80',
+      '5,50 EUR',
+      'Mocktail',
+      'Neu',
+      null,
+      null,
+      103,
+      true,
+      'drink',
+      'all_day',
+      array['all_day']::text[]
+    ),
+    (
+      'Tonic Berry',
+      'Beerig, herb und perfekt fÃ¼r warme Abende.',
+      'https://images.unsplash.com/photo-1505224522996-4b2f9bf7f6c5?auto=format&fit=crop&w=1200&q=80',
+      '6,20 EUR',
+      'Signature',
+      'Hausbar',
+      null,
+      null,
+      104,
+      true,
+      'drink',
+      'all_day',
+      array['all_day']::text[]
+    )
+) as v(
+  title,
+  description,
+  image_url,
+  price,
+  category,
+  badge,
+  cta_label,
+  cta_url,
+  sort_order,
+  is_active,
+  item_type,
+  menu_period,
+  menu_periods
+)
+where not exists (
+  select 1
+  from public.menu_items m
+  where m.title = v.title
+);
