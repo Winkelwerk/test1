@@ -31,6 +31,8 @@ Offizielle Infos:
   Erweitert die Zeitfenster auf Mehrfachauswahl wie Mittag und Abend gleichzeitig
 - `supabase/migrations/20260605190000_menu_item_types_orders.sql`
   Fuegt `item_type` fuer Speisen und Getraenke hinzu und legt die Bestell-Tabelle an
+- `supabase/migrations/20260608153000_backfill_drink_item_types.sql`
+  Korrigiert bestehende Getraenke in der Datenbank auf `item_type = drink`
 - `supabase/functions/push-api/index.ts`
   Die HTTP-API fuer
   - `GET /menu`
@@ -105,6 +107,7 @@ Datei: `app-config.js`
 
 ```js
 window.WINKELWERK_APP_CONFIG = {
+  pushFunctionUrl: "https://DEIN-PROJEKT.functions.supabase.co/push-api",
   pushApiBaseUrl: "https://DEIN-PROJEKT.functions.supabase.co/push-api",
   vapidPublicKey: "DEIN_VAPID_PUBLIC_KEY",
   adminCodeHash: "DEIN_SHA256_HASH"

@@ -710,7 +710,7 @@
   <script>
     const appConfig = window.WINKELWERK_APP_CONFIG || {};
     const ACCESS_CODE_HASH = appConfig.adminCodeHash || "6209c99de88145d6dfd861fa1805e7e7cd1c7a1084d79f080f9dc5c8cf973a6e";
-    const API_BASE = String(appConfig.pushApiBaseUrl || "").replace(/\/+$/, "");
+    const API_BASE = String(appConfig.pushFunctionUrl || appConfig.pushApiBaseUrl || "").replace(/\/+$/, "");
     const gateForm = document.getElementById("gateForm");
     const gatePanel = document.getElementById("gatePanel");
     const adminPanel = document.getElementById("adminPanel");
