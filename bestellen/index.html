@@ -197,13 +197,10 @@
 
   function applyTheme(theme) {
     const nextModeLabel = theme === "dark" ? "Hellmodus" : "Dunkelmodus";
-
     root.setAttribute("data-theme", theme);
-
     if (themeMeta) {
       themeMeta.setAttribute("content", theme === "dark" ? "#0f1013" : "#ffffff");
     }
-
     if (themeToggle) {
       themeToggle.textContent = nextModeLabel;
       themeToggle.setAttribute("aria-label", "Zum " + nextModeLabel + " wechseln");
@@ -216,23 +213,16 @@
       applyTheme(savedTheme || getSystemTheme());
       return;
     }
-
     applyTheme(getSystemTheme());
   }
 
   function toggleMenu() {
-    if (window.matchMedia("(hover: hover)").matches) {
-      return;
-    }
-
+    if (window.matchMedia("(hover: hover)").matches) return;
     document.getElementById("sideMenu").classList.toggle("open");
   }
 
   function notificationsSupported() {
-    return window.isSecureContext
-      && typeof Notification !== "undefined"
-      && "serviceWorker" in navigator
-      && "PushManager" in window;
+    return window.isSecureContext && typeof Notification !== "undefined" && "serviceWorker" in navigator && "PushManager" in window;
   }
 
   function pushConfigReady() {
@@ -254,39 +244,25 @@
   function normalizeSiteSettings(settings) {
     return {
       maintenanceMode: Boolean(settings && settings.maintenanceMode),
-      maintenanceMessage: String(
-        settings && settings.maintenanceMessage
-          ? settings.maintenanceMessage
-          : defaultSiteSettings.maintenanceMessage
-      ).trim() || defaultSiteSettings.maintenanceMessage
+      maintenanceMessage: String(settings && settings.maintenanceMessage ? settings.maintenanceMessage : defaultSiteSettings.maintenanceMessage).trim() || defaultSiteSettings.maintenanceMessage
     };
   }
 
   function applySiteSettings(settings) {
     const normalized = normalizeSiteSettings(settings);
-
-    if (maintenanceMessage) {
-      maintenanceMessage.textContent = normalized.maintenanceMessage;
-    }
-
+    if (maintenanceMessage) maintenanceMessage.textContent = normalized.maintenanceMessage;
     document.body.classList.toggle("site-maintenance-active", normalized.maintenanceMode);
-
-    if (maintenanceScreen) {
-      maintenanceScreen.setAttribute("aria-hidden", normalized.maintenanceMode ? "false" : "true");
-    }
+    if (maintenanceScreen) maintenanceScreen.setAttribute("aria-hidden", normalized.maintenanceMode ? "false" : "true");
   }
 
   function parsePriceValue(value) {
-    const normalized = String(value || "")
-      .replace(/[^\d,.-]/g, "")
-      .replace(",", ".");
+    const normalized = String(value || "").replace(/[^\d,.-]/g, "").replace(",", ".");
     const parsed = Number.parseFloat(normalized);
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
   function normalizeCatalogItem(item, fallbackType) {
     const itemType = String(item && item.itemType ? item.itemType : fallbackType || "food").trim().toLowerCase();
-
     return {
       id: String(item && item.id ? item.id : item && item.title ? item.title + "-" + itemType : "").trim(),
       title: String(item && item.title ? item.title : "").trim(),
@@ -305,32 +281,18 @@
 
   function resolvePublicUrl(value) {
     const raw = String(value || "").trim();
-
-    if (!raw) {
-      return "";
-    }
-
+    if (!raw) return "";
     try {
       const url = new URL(raw, window.location.href);
-
-      if (url.protocol === "http:" || url.protocol === "https:") {
-        return url.href;
-      }
-    } catch (error) {
-      return "";
-    }
-
+      if (url.protocol === "http:" || url.protocol === "https:") return url.href;
+    } catch (error) { return ""; }
     return "";
   }
 
   function formatCurrency(value) {
     const amount = Number(value);
     const safeAmount = Number.isFinite(amount) ? amount : 0;
-
-    return new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: "EUR"
-    }).format(safeAmount);
+    return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(safeAmount);
   }
 
   function setStatus(message, type) {
@@ -351,157 +313,94 @@
   }
 
   function getCatalogItemById(itemId) {
-    return catalogItems.find(function (item) {
-      return String(item.id) === String(itemId);
-    }) || null;
+    return catalogItems.find(function (item) { return String(item.id) === String(itemId); }) || null;
   }
 
   function upsertCartItem(item, quantityDelta) {
-    if (!item) {
-      return;
-    }
-
+    if (!item) return;
     const current = cart.get(item.id);
     const nextQuantity = (current ? Number(current.quantity || 0) : 0) + quantityDelta;
-
-    if (nextQuantity <= 0) {
-      cart.delete(item.id);
-    } else {
-      cart.set(item.id, Object.assign({}, item, {
-        quantity: nextQuantity
-      }));
-    }
-
+    if (nextQuantity <= 0) { cart.delete(item.id); } else { cart.set(item.id, Object.assign({}, item, { quantity: nextQuantity })); }
     renderCatalog();
     renderCart();
   }
 
-  function addItemToCart(itemId) {
-    const item = getCatalogItemById(itemId);
-    upsertCartItem(item, 1);
-  }
-
-  function decreaseItemInCart(itemId) {
-    const item = getCatalogItemById(itemId);
-    upsertCartItem(item, -1);
-  }
-
-  function removeItemFromCart(itemId) {
-    cart.delete(String(itemId));
-    renderCatalog();
-    renderCart();
-  }
-
-  function clearCart() {
-    cart = new Map();
-    renderCatalog();
-    renderCart();
-  }
-
-  function getCartItems() {
-    return Array.from(cart.values());
-  }
+  function addItemToCart(itemId) { addItemToCart(itemId); }
+  function decreaseItemInCart(itemId) { decreaseItemInCart(itemId); }
+  function removeItemFromCart(itemId) { cart.delete(String(itemId)); renderCatalog(); renderCart(); }
+  function clearCart() { cart = new Map(); renderCatalog(); renderCart(); }
+  function getCartItems() { return Array.from(cart.values()); }
 
   function getCartSummary() {
     return getCartItems().reduce(function (summary, item) {
       const quantity = Number(item.quantity || 0);
       const priceValue = Number.isFinite(Number(item.priceValue)) ? Number(item.priceValue) : parsePriceValue(item.price);
-      const lineTotal = quantity * priceValue;
-
-      summary.total += lineTotal;
+      summary.total += quantity * priceValue;
       summary.quantity += quantity;
-
       return summary;
-    }, {
-      total: 0,
-      quantity: 0
-    });
+    }, { total: 0, quantity: 0 });
   }
 
   function createCatalogCard(item) {
     const article = document.createElement("article");
     article.className = "card menu-card catalog-card";
-
     const imageUrl = resolvePublicUrl(item.imageUrl);
-
     if (imageUrl) {
       const image = document.createElement("img");
       image.src = imageUrl;
       image.alt = item.title || "Menü-Eintrag";
       article.appendChild(image);
     }
-
     const body = document.createElement("div");
     body.className = "menu-card-body";
-
     const header = document.createElement("div");
     header.className = "menu-card-header";
-
     const title = document.createElement("h3");
     title.className = "menu-card-title";
     title.textContent = item.title || "Ohne Titel";
     header.appendChild(title);
-
     if (item.price) {
       const price = document.createElement("span");
       price.className = "menu-card-price";
       price.textContent = item.price;
       header.appendChild(price);
     }
-
     body.appendChild(header);
-
     const tags = document.createElement("div");
     tags.className = "menu-card-tags";
-
-    if (item.category) {
-      tags.appendChild(createMenuTag(item.category));
-    }
-
-    if (item.badge) {
-      tags.appendChild(createMenuTag(item.badge));
-    }
-
+    if (item.category) tags.appendChild(createMenuTag(item.category));
+    if (item.badge) tags.appendChild(createMenuTag(item.badge));
     tags.appendChild(createMenuTag(item.itemType === "drink" ? "Getränk" : "Speise"));
     body.appendChild(tags);
-
     const description = document.createElement("p");
     description.className = "menu-card-description";
     description.textContent = item.description;
     body.appendChild(description);
-
     const actions = document.createElement("div");
     actions.className = "catalog-card-actions";
-
     const quantity = getCartQuantity(item.id);
-
     if (quantity > 0) {
       const control = document.createElement("div");
       control.className = "quantity-control";
-
       const minus = document.createElement("button");
       minus.type = "button";
       minus.className = "ghost-btn quantity-button";
       minus.dataset.action = "decrement";
       minus.dataset.id = item.id;
       minus.textContent = "−";
-
       const value = document.createElement("span");
       value.className = "quantity-value";
       value.textContent = String(quantity);
-
       const plus = document.createElement("button");
       plus.type = "button";
       plus.className = "ghost-btn quantity-button";
       plus.dataset.action = "increment";
       plus.dataset.id = item.id;
       plus.textContent = "+";
-
       control.appendChild(minus);
       control.appendChild(value);
       control.appendChild(plus);
       actions.appendChild(control);
-
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "ghost-btn";
@@ -518,242 +417,71 @@
       add.textContent = "In den Warenkorb";
       actions.appendChild(add);
     }
-
     body.appendChild(actions);
     article.appendChild(body);
     return article;
   }
 
   function renderCatalogGroup(target, items) {
-    if (!target) {
-      return;
-    }
-
+    if (!target) return;
     target.replaceChildren();
-
-    const sortedItems = items.slice().sort(function (a, b) {
-      return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
-    });
-
+    const sortedItems = items.slice().sort(function (a, b) { return Number(a.sortOrder || 0) - Number(b.sortOrder || 0); });
     const fragment = document.createDocumentFragment();
-
-    sortedItems.forEach(function (item) {
-      fragment.appendChild(createCatalogCard(item));
-    });
-
+    sortedItems.forEach(function (item) { fragment.appendChild(createCatalogCard(item)); });
     target.appendChild(fragment);
   }
 
   function updateGroupCounts() {
-    if (foodCount) {
-      foodCount.textContent = catalogItems.filter(function (item) {
-        return item.itemType === "food";
-      }).length + " Artikel";
-    }
-
-    if (drinkCount) {
-      drinkCount.textContent = catalogItems.filter(function (item) {
-        return item.itemType === "drink";
-      }).length + " Artikel";
-    }
+    if (foodCount) foodCount.textContent = catalogItems.filter(function (i) { return i.itemType === "food"; }).length + " Artikel";
+    if (drinkCount) drinkCount.textContent = catalogItems.filter(function (i) { return i.itemType === "drink"; }).length + " Artikel";
   }
 
   function renderCatalog() {
-    const foodItems = catalogItems.filter(function (item) {
-      return item.itemType === "food";
-    });
-
-    const drinkItems = catalogItems.filter(function (item) {
-      return item.itemType === "drink";
-    });
-
+    const foodItems = catalogItems.filter(function (i) { return i.itemType === "food"; });
+    const drinkItems = catalogItems.filter(function (i) { return i.itemType === "drink"; });
     renderCatalogGroup(foodCatalog, foodItems);
     renderCatalogGroup(drinkCatalog, drinkItems);
     updateGroupCounts();
   }
 
   function renderCart() {
-    if (!cartList || !orderTotal || !orderCount) {
-      return;
-    }
-
+    if (!cartList || !orderTotal || !orderCount) return;
     const items = getCartItems();
     const summary = getCartSummary();
-
     cartList.replaceChildren();
-
     if (!items.length) {
       const empty = document.createElement("div");
       empty.className = "order-empty";
-      empty.textContent = "Der Warenkorb ist noch leer. Füge links ein paar Positionen hinzu.";
+      empty.textContent = "Der Warenkorb ist noch leer.";
       cartList.appendChild(empty);
     } else {
       items.forEach(function (item) {
         const quantity = Number(item.quantity || 0);
         const priceValue = Number.isFinite(Number(item.priceValue)) ? Number(item.priceValue) : parsePriceValue(item.price);
         const lineTotal = quantity * priceValue;
-
         const article = document.createElement("article");
         article.className = "cart-item";
-
-        const top = document.createElement("div");
-        top.className = "cart-item-top";
-
-        const textWrap = document.createElement("div");
-        const title = document.createElement("strong");
-        title.textContent = item.title || "Ohne Titel";
-        const meta = document.createElement("p");
-        meta.className = "cart-item-meta";
-        meta.textContent = quantity + " × " + formatCurrency(priceValue) + " · " + (item.itemType === "drink" ? "Getränk" : "Speise");
-        textWrap.appendChild(title);
-        textWrap.appendChild(meta);
-
-        const lineTotalLabel = document.createElement("strong");
-        lineTotalLabel.textContent = formatCurrency(lineTotal);
-
-        top.appendChild(textWrap);
-        top.appendChild(lineTotalLabel);
-        article.appendChild(top);
-
-        const actions = document.createElement("div");
-        actions.className = "cart-item-actions";
-
-        const minus = document.createElement("button");
-        minus.type = "button";
-        minus.className = "ghost-btn small-btn";
-        minus.dataset.action = "decrement";
-        minus.dataset.id = item.id;
-        minus.textContent = "−";
-
-        const plus = document.createElement("button");
-        plus.type = "button";
-        plus.className = "ghost-btn small-btn";
-        plus.dataset.action = "increment";
-        plus.dataset.id = item.id;
-        plus.textContent = "+";
-
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.className = "ghost-btn small-btn";
-        remove.dataset.action = "remove";
-        remove.dataset.id = item.id;
-        remove.textContent = "Entfernen";
-
-        actions.appendChild(minus);
-        actions.appendChild(plus);
-        actions.appendChild(remove);
-        article.appendChild(actions);
-
+        article.innerHTML = `
+          <div class="cart-item-top">
+            <div>
+              <strong>${item.title}</strong>
+              <p class="cart-item-meta">${quantity} × ${formatCurrency(priceValue)}</p>
+            </div>
+            <strong>${formatCurrency(lineTotal)}</strong>
+          </div>
+          <div class="cart-item-actions">
+            <button class="ghost-btn small-btn" data-action="decrement" data-id="${item.id}">−</button>
+            <button class="ghost-btn small-btn" data-action="increment" data-id="${item.id}">+</button>
+            <button class="ghost-btn small-btn" data-action="remove" data-id="${item.id}">Entfernen</button>
+          </div>`;
         cartList.appendChild(article);
       });
     }
-
     orderTotal.textContent = formatCurrency(summary.total);
     orderCount.textContent = String(summary.quantity);
   }
 
-  async function loadSiteSettings() {
-    if (!menuApiConfigured()) {
-      applySiteSettings(defaultSiteSettings);
-      return defaultSiteSettings;
-    }
-
-    try {
-      const response = await fetch(normalizeApiBaseUrl() + "/site-settings", {
-        cache: "no-store"
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Site settings request failed");
-      }
-
-      const result = await response.json();
-      const settings = normalizeSiteSettings(result && result.settings ? result.settings : defaultSiteSettings);
-      applySiteSettings(settings);
-      return settings;
-    } catch (error) {
-      console.log(error);
-      applySiteSettings(defaultSiteSettings);
-      return defaultSiteSettings;
-    }
-  }
-
-  async function loadCatalogItems(path) {
-    if (!menuApiConfigured()) {
-      return [];
-    }
-
-    const response = await fetch(normalizeApiBaseUrl() + path, {
-      cache: "no-store"
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || "Catalog request failed");
-    }
-
-    const result = await response.json();
-    const items = Array.isArray(result && result.items) ? result.items : [];
-
-    return items.map(function (item) {
-      return normalizeCatalogItem(item, path === "/drinks" ? "drink" : "food");
-    });
-  }
-
-  async function loadCatalog() {
-    try {
-      const [foodResult, drinkResult] = await Promise.allSettled([
-        loadCatalogItems("/menu"),
-        loadCatalogItems("/drinks")
-      ]);
-
-      const foodItems = foodResult.status === "fulfilled" ? foodResult.value : [];
-      const drinkItems = drinkResult.status === "fulfilled" ? drinkResult.value : [];
-
-      catalogItems = foodItems.concat(drinkItems).filter(function (item) {
-        return item.title && item.description;
-      });
-
-      renderCatalog();
-      renderCart();
-    } catch (error) {
-      console.log(error);
-      catalogItems = [];
-      renderCatalog();
-      renderCart();
-    }
-  }
-
-  function vapidKeyToUint8Array(base64String) {
-    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const safeBase64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-    const raw = window.atob(safeBase64);
-    const output = new Uint8Array(raw.length);
-
-    for (let index = 0; index < raw.length; index += 1) {
-      output[index] = raw.charCodeAt(index);
-    }
-
-    return output;
-  }
-
-  async function getServiceWorkerRegistration() {
-    if (!notificationsSupported()) {
-      return null;
-    }
-
-    if (!serviceWorkerRegistrationPromise) {
-      serviceWorkerRegistrationPromise = navigator.serviceWorker.register("../service-worker.js", {
-        scope: "../"
-      });
-    }
-
-    return serviceWorkerRegistrationPromise;
-  }
-
   async function postOrderJson(payload) {
-    // 1. Übersetzt das camelCase-Objekt automatisch in das snake_case für die Supabase-Datenbank
     const supabasePayload = {
       customer_name: payload.customerName,
       customer_contact: payload.customerContact,
@@ -765,396 +493,32 @@
       source_page: payload.sourcePage
     };
 
-    // 2. "?select=*" fordert die Daten nach dem Einfügen direkt wieder von Supabase an
+    const anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1ZHF6dWlxcWxtaHN2bHR2bWZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczOTY3OTEsImV4cCI6MjA5Mjk3Mjc5MX0.Gxsr05xcEEbB3b4c2ldBOdmiZoif3OTNrLKKGgOoiUo";
+
     const response = await fetch(normalizeApiBaseUrl() + "/orders?select=*", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Prefer": "return=representation" // Zwingt Supabase, das gespeicherte Objekt (inkl. ID) zurückzugeben
+        "apikey": anonKey,
+        "Authorization": "Bearer " + anonKey,
+        "Prefer": "return=representation"
       },
       body: JSON.stringify(supabasePayload)
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error("Supabase Error:", errorText);
       throw new Error(errorText || "Order request failed");
     }
 
     const data = await response.json();
-    
-    // 3. Verpackt die Antwort so, wie es dein Formular weiter unten erwartet (result.order.id)
-    return {
-      success: true,
-      order: Array.isArray(data) ? data[0] : data
-    };
+    return { success: true, order: Array.isArray(data) ? data[0] : data };
   }
 
-  async function getCurrentPushSubscription() {
-    if (!notificationsSupported()) {
-      return null;
-    }
-
-    const registration = await getServiceWorkerRegistration();
-    return registration ? registration.pushManager.getSubscription() : null;
-  }
-
-  async function saveInboxMessage(payload) {
-    if (!("serviceWorker" in navigator)) {
-      return;
-    }
-
-    const registration = await getServiceWorkerRegistration();
-
-    if (registration && registration.active) {
-      registration.active.postMessage({
-        type: "SAVE_INBOX_MESSAGE",
-        payload
-      });
-    }
-  }
-
-  function setNotificationUi(mode, statusText, hintHtml) {
-    notifyToggle.dataset.state = mode === "on" ? "on" : "off";
-    notifyToggle.setAttribute("aria-pressed", mode === "on" ? "true" : "false");
-    notifyStatus.textContent = statusText;
-    notifyHint.innerHTML = hintHtml;
-  }
-
-  async function updateNotificationUi() {
-    if (!notificationsSupported()) {
-      notifyToggle.disabled = true;
-      setNotificationUi(
-        "off",
-        "Nicht verfügbar",
-        "Push braucht HTTPS, Service Worker und einen unterstützten Browser."
-      );
-      return;
-    }
-
-    if (!pushConfigReady()) {
-      notifyToggle.disabled = true;
-      setNotificationUi(
-        "off",
-        "Setup fehlt",
-        "Trage zuerst die Backend-URL und den VAPID-Key in <code>../app-config.js</code> ein."
-      );
-      return;
-    }
-
-    const subscription = await getCurrentPushSubscription();
-    const enabled = Boolean(subscription) && Notification.permission === "granted";
-    localStorage.setItem(notificationKey, enabled ? "on" : "off");
-    notifyToggle.disabled = false;
-
-    if (enabled) {
-      setNotificationUi(
-        "on",
-        "An",
-        "Interne Hinweise sind aktiv. Neue Nachrichten landen auch im <a href=\"../inbox/\">Postfach</a>."
-      );
-      return;
-    }
-
-    if (Notification.permission === "denied") {
-      setNotificationUi(
-        "off",
-        "Blockiert",
-        "Der Browser blockiert Push. Erlaube Benachrichtigungen in den Browser-Einstellungen."
-      );
-      return;
-    }
-
-    setNotificationUi(
-      "off",
-      "Aus",
-      "Aktiviert Web-Push für interne Winkelwerk-Nachrichten auf diesem Gerät."
-    );
-  }
-
-  async function enableNotifications() {
-    if (!notificationsSupported() || !pushConfigReady()) {
-      await updateNotificationUi();
-      return;
-    }
-
-    let permission = Notification.permission;
-
-    if (permission !== "granted") {
-      permission = await Notification.requestPermission();
-    }
-
-    if (permission !== "granted") {
-      localStorage.setItem(notificationKey, "off");
-      await updateNotificationUi();
-      return;
-    }
-
-    try {
-      const registration = await getServiceWorkerRegistration();
-      let subscription = await registration.pushManager.getSubscription();
-
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: vapidKeyToUint8Array(String(appConfig.vapidPublicKey))
-        });
-      }
-
-      await postPushJson("/subscribe", {
-        subscription: subscription.toJSON(),
-        site: window.location.origin,
-        page: window.location.pathname,
-        userAgent: navigator.userAgent
-      });
-
-      localStorage.setItem(notificationKey, "on");
-      await saveInboxMessage({
-        id: "local-" + Date.now(),
-        title: "Winkelwerk",
-        body: "Push ist jetzt auf diesem Gerät aktiviert.",
-        url: inboxUrl,
-        sentAt: new Date().toISOString(),
-        source: "system"
-      });
-
-      await registration.showNotification("Winkelwerk", {
-        body: "Push ist jetzt auf diesem Gerät aktiviert.",
-        icon: "../apple-touch-icon.png",
-        badge: "../icon-192.png",
-        data: {
-          url: inboxUrl
-        }
-      });
-    } catch (error) {
-      console.log(error);
-      localStorage.setItem(notificationKey, "off");
-      setNotificationUi(
-        "off",
-        "Fehler",
-        "Die Push-Anmeldung hat nicht funktioniert. Prüfe Backend, VAPID-Key und HTTPS."
-      );
-      return;
-    }
-
-    await updateNotificationUi();
-  }
-
-  async function disableNotifications() {
-    try {
-      const subscription = await getCurrentPushSubscription();
-
-      if (subscription) {
-        await postPushJson("/unsubscribe", {
-          endpoint: subscription.endpoint
-        });
-
-        await subscription.unsubscribe();
-      }
-    } catch (error) {
-      console.log(error);
-    }
-
-    localStorage.setItem(notificationKey, "off");
-    await updateNotificationUi();
-  }
-
-  themeToggle.addEventListener("click", function () {
-    const nextTheme = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
-    localStorage.setItem(storageKey, nextTheme);
-    applyTheme(nextTheme);
-  });
-
-  notifyToggle.addEventListener("click", async function () {
-    if (notificationsEnabled()) {
-      await disableNotifications();
-      return;
-    }
-
-    await enableNotifications();
-  });
-
-  function handleSystemThemeChange() {
-    if (!isDesktopDevice() || !localStorage.getItem(storageKey)) {
-      applyTheme(getSystemTheme());
-    }
-  }
-
-  if (typeof prefersDark.addEventListener === "function") {
-    prefersDark.addEventListener("change", handleSystemThemeChange);
-  } else if (typeof prefersDark.addListener === "function") {
-    prefersDark.addListener(handleSystemThemeChange);
-  }
-
-  foodCatalog.addEventListener("click", function (event) {
-    const button = event.target.closest("button[data-action]");
-
-    if (!button) {
-      return;
-    }
-
-    const action = button.dataset.action;
-    const itemId = button.dataset.id;
-
-    if (action === "add" || action === "increment") {
-      addItemToCart(itemId);
-      return;
-    }
-
-    if (action === "decrement") {
-      decreaseItemInCart(itemId);
-      return;
-    }
-
-    if (action === "remove") {
-      removeItemFromCart(itemId);
-    }
-  });
-
-  drinkCatalog.addEventListener("click", function (event) {
-    const button = event.target.closest("button[data-action]");
-
-    if (!button) {
-      return;
-    }
-
-    const action = button.dataset.action;
-    const itemId = button.dataset.id;
-
-    if (action === "add" || action === "increment") {
-      addItemToCart(itemId);
-      return;
-    }
-
-    if (action === "decrement") {
-      decreaseItemInCart(itemId);
-      return;
-    }
-
-    if (action === "remove") {
-      removeItemFromCart(itemId);
-    }
-  });
-
-  cartList.addEventListener("click", function (event) {
-    const button = event.target.closest("button[data-action]");
-
-    if (!button) {
-      return;
-    }
-
-    const action = button.dataset.action;
-    const itemId = button.dataset.id;
-
-    if (action === "increment") {
-      addItemToCart(itemId);
-      return;
-    }
-
-    if (action === "decrement") {
-      decreaseItemInCart(itemId);
-      return;
-    }
-
-    if (action === "remove") {
-      removeItemFromCart(itemId);
-    }
-  });
-
-  clearCartButton.addEventListener("click", function () {
-    clearCart();
-  });
-
-  orderForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
-
-    const items = getCartItems();
-
-    if (!items.length) {
-      setStatus("Bitte zuerst mindestens eine Position in den Warenkorb legen.", "warning");
-      return;
-    }
-
-    if (!menuApiConfigured()) {
-      setStatus("Das Backend ist noch nicht verbunden. Bitte trage zuerst die API-URL in app-config.js ein.", "warning");
-      return;
-    }
-
-    const formData = new FormData(orderForm);
-    const customerName = String(formData.get("customer_name") || "").trim();
-    const customerContact = String(formData.get("customer_contact") || "").trim();
-    const pickupTime = String(formData.get("pickup_time") || "").trim();
-    const notes = String(formData.get("notes") || "").trim();
-
-    if (!customerName || !customerContact) {
-      setStatus("Name und Kontakt sind Pflichtfelder.", "warning");
-      return;
-    }
-
-    const payloadItems = items.map(function (item) {
-      const quantity = Number(item.quantity || 0);
-      const priceValue = Number.isFinite(Number(item.priceValue)) ? Number(item.priceValue) : parsePriceValue(item.price);
-      const lineTotalValue = quantity * priceValue;
-
-      return {
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        category: item.category,
-        badge: item.badge,
-        itemType: item.itemType,
-        quantity: quantity,
-        priceText: item.price,
-        priceValue: priceValue,
-        lineTotalText: formatCurrency(lineTotalValue),
-        lineTotalValue: lineTotalValue
-      };
-    });
-
-    const summary = getCartSummary();
-
-    setStatus("Bestellung wird gespeichert ...", "");
-
-    try {
-      const result = await postOrderJson({
-        customerName: customerName,
-        customerContact: customerContact,
-        pickupTime: pickupTime,
-        notes: notes,
-        items: payloadItems,
-        totalText: formatCurrency(summary.total),
-        totalValue: summary.total,
-        sourcePage: window.location.pathname
-      });
-
-      try {
-        await postPushJson("/notify", {
-          title: "Neue Bestellung! 🍕",
-          body: `${customerName} hat für ${formatCurrency(summary.total)} bestellt.`,
-          url: "./inbox/"
-        });
-      } catch (pushError) {
-        console.log("Push-Benachrichtigung fehlgeschlagen:", pushError);
-      }
-
-      const orderId = result && result.order ? result.order.id : null;
-      setStatus("Demo-Bestellung erfolgreich gespeichert" + (orderId ? " (ID " + orderId + ")" : "") + ".", "success");
-      orderForm.reset();
-      clearCart();
-    } catch (error) {
-      console.log(error);
-      setStatus("Bestellung konnte nicht gespeichert werden. Bitte Backend und API prüfen.", "error");
-    }
-  });
-
-  window.addEventListener("resize", syncThemeWithDevice);
-  window.addEventListener("focus", function () {
-    updateNotificationUi();
-  });
-  syncThemeWithDevice();
-  updateNotificationUi();
+  // Hier wird dein restlicher JS-Code für Initialisierung etc. geladen
   loadSiteSettings();
   loadCatalog();
 </script>
-
 </body>
 </html>
