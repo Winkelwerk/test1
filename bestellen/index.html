@@ -182,94 +182,7 @@
     maintenanceMode: false,
     maintenanceMessage: "Website wird gerade bearbeitet. Bitte später erneut versuchen."
   };
-  const defaultFoodItems = [
-    {
-      title: "Smashburger",
-      description: "Frisch gesmashtes Rindfleisch-Patty im weichen Bun mit hausgemachter Sauce.",
-      imageUrl: "https://oldworldgardenfarms.com/wp-content/uploads/2025/05/smashburger-735x735.jpg",
-      category: "Burger",
-      badge: "Beliebt",
-      price: "14,90 EUR",
-      priceValue: 14.9,
-      itemType: "food",
-      sortOrder: 1,
-      menuPeriods: ["lunch", "dinner"],
-      ctaLabel: "",
-      ctaUrl: ""
-    },
-    {
-      title: "Tandoori Chicken",
-      description: "Saftig mariniert und mit fein gerösteten Gewürzen serviert.",
-      imageUrl: "https://images.getrecipekit.com/20250721213330-Tandoori-Chicken-2.jpg?aspect_ratio=16:9&quality=90&",
-      category: "Signature",
-      badge: "Hausfavorit",
-      price: "16,90 EUR",
-      priceValue: 16.9,
-      itemType: "food",
-      sortOrder: 2,
-      menuPeriods: ["dinner"],
-      ctaLabel: "",
-      ctaUrl: ""
-    },
-    {
-      title: "Breakfast Plate",
-      description: "Ei, Brot, frischer Aufschnitt und kleine Extras für den perfekten Start.",
-      imageUrl: "https://images.unsplash.com/photo-1533089860892-a9b9c5f1c5f8?auto=format&fit=crop&w=1200&q=80",
-      category: "Frühstück",
-      badge: "Morgens",
-      price: "11,90 EUR",
-      priceValue: 11.9,
-      itemType: "food",
-      sortOrder: 3,
-      menuPeriods: ["breakfast"],
-      ctaLabel: "",
-      ctaUrl: ""
-    }
-  ];
-  const defaultDrinkItems = [
-    {
-      title: "Hauslimonade",
-      description: "Spritzig, frisch und mit feiner Zitrusnote.",
-      imageUrl: "https://images.unsplash.com/photo-1621263764928-df1444c5e859?auto=format&fit=crop&w=1200&q=80",
-      category: "Kalt",
-      badge: "Hausgemacht",
-      price: "4,90 EUR",
-      priceValue: 4.9,
-      itemType: "drink",
-      sortOrder: 101,
-      menuPeriods: ["all_day"],
-      ctaLabel: "",
-      ctaUrl: ""
-    },
-    {
-      title: "Espresso",
-      description: "Klein, stark und perfekt nach dem Essen.",
-      imageUrl: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&w=1200&q=80",
-      category: "Heiß",
-      badge: "Klassiker",
-      price: "2,80 EUR",
-      priceValue: 2.8,
-      itemType: "drink",
-      sortOrder: 102,
-      menuPeriods: ["all_day"],
-      ctaLabel: "",
-      ctaUrl: ""
-    },
-    {
-      title: "Cappuccino",
-      description: "Cremiger Espresso mit fein aufgeschäumter Milch.",
-      imageUrl: "https://images.unsplash.com/photo-1517701550927-30cf4ba1fe5f?auto=format&fit=crop&w=1200&q=80",
-      category: "Heiß",
-      badge: "Beliebt",
-      price: "3,90 EUR",
-      priceValue: 3.9,
-      itemType: "drink",
-      sortOrder: 103,
-      menuPeriods: ["all_day"],
-      ctaLabel: "",
-      ctaUrl: ""
-    }
-  ];
+
   let serviceWorkerRegistrationPromise;
   let catalogItems = [];
   let cart = new Map();
@@ -766,11 +679,9 @@
     }
   }
 
-  async function loadCatalogItems(path, fallbackItems) {
+  async function loadCatalogItems(path) {
     if (!menuApiConfigured()) {
-      return fallbackItems.slice().map(function (item) {
-        return normalizeCatalogItem(item, item.itemType || "food");
-      });
+      return [];
     }
 
     const response = await fetch(normalizeApiBaseUrl() + path, {
@@ -785,28 +696,20 @@
     const result = await response.json();
     const items = Array.isArray(result && result.items) ? result.items : [];
 
-    return items.length
-      ? items.map(function (item) {
-        return normalizeCatalogItem(item, path === "/drinks" ? "drink" : "food");
-      })
-      : fallbackItems.slice().map(function (item) {
-        return normalizeCatalogItem(item, item.itemType || "food");
-      });
+    return items.map(function (item) {
+      return normalizeCatalogItem(item, path === "/drinks" ? "drink" : "food");
+    });
   }
 
   async function loadCatalog() {
     try {
       const [foodResult, drinkResult] = await Promise.allSettled([
-        loadCatalogItems("/menu", defaultFoodItems),
-        loadCatalogItems("/drinks", defaultDrinkItems)
+        loadCatalogItems("/menu"),
+        loadCatalogItems("/drinks")
       ]);
 
-      const foodItems = foodResult.status === "fulfilled" ? foodResult.value : defaultFoodItems.map(function (item) {
-        return normalizeCatalogItem(item, "food");
-      });
-      const drinkItems = drinkResult.status === "fulfilled" ? drinkResult.value : defaultDrinkItems.map(function (item) {
-        return normalizeCatalogItem(item, "drink");
-      });
+      const foodItems = foodResult.status === "fulfilled" ? foodResult.value : [];
+      const drinkItems = drinkResult.status === "fulfilled" ? drinkResult.value : [];
 
       catalogItems = foodItems.concat(drinkItems).filter(function (item) {
         return item.title && item.description;
@@ -816,11 +719,7 @@
       renderCart();
     } catch (error) {
       console.log(error);
-      catalogItems = defaultFoodItems.map(function (item) {
-        return normalizeCatalogItem(item, "food");
-      }).concat(defaultDrinkItems.map(function (item) {
-        return normalizeCatalogItem(item, "drink");
-      }));
+      catalogItems = [];
       renderCatalog();
       renderCart();
     }
@@ -1224,6 +1123,16 @@
         totalValue: summary.total,
         sourcePage: window.location.pathname
       });
+
+      try {
+        await postPushJson("/notify", {
+          title: "Neue Bestellung! 🍕",
+          body: `${customerName} hat für ${formatCurrency(summary.total)} bestellt.`,
+          url: "./inbox/"
+        });
+      } catch (pushError) {
+        console.log("Push-Benachrichtigung fehlgeschlagen:", pushError);
+      }
 
       const orderId = result && result.order ? result.order.id : null;
       setStatus("Demo-Bestellung erfolgreich gespeichert" + (orderId ? " (ID " + orderId + ")" : "") + ".", "success");
