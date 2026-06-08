@@ -752,31 +752,27 @@
     return serviceWorkerRegistrationPromise;
   }
 
-  async function postPushJson(path, payload) {
-    const response = await fetch(normalizeApiBaseUrl() + path, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || "Push request failed");
-    }
-
-    const contentType = response.headers.get("content-type") || "";
-    return contentType.includes("application/json") ? response.json() : null;
-  }
-
   async function postOrderJson(payload) {
-    const response = await fetch(normalizeApiBaseUrl() + "/orders", {
+    // 1. Übersetzt das camelCase-Objekt automatisch in das snake_case für die Supabase-Datenbank
+    const supabasePayload = {
+      customer_name: payload.customerName,
+      customer_contact: payload.customerContact,
+      pickup_time: payload.pickupTime,
+      notes: payload.notes,
+      items: payload.items,
+      total_text: payload.totalText,
+      total_value: payload.totalValue,
+      source_page: payload.sourcePage
+    };
+
+    // 2. "?select=*" fordert die Daten nach dem Einfügen direkt wieder von Supabase an
+    const response = await fetch(normalizeApiBaseUrl() + "/orders?select=*", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Prefer": "return=representation" // Zwingt Supabase, das gespeicherte Objekt (inkl. ID) zurückzugeben
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(supabasePayload)
     });
 
     if (!response.ok) {
@@ -784,7 +780,13 @@
       throw new Error(errorText || "Order request failed");
     }
 
-    return response.json();
+    const data = await response.json();
+    
+    // 3. Verpackt die Antwort so, wie es dein Formular weiter unten erwartet (result.order.id)
+    return {
+      success: true,
+      order: Array.isArray(data) ? data[0] : data
+    };
   }
 
   async function getCurrentPushSubscription() {
