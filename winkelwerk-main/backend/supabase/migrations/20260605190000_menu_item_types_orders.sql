@@ -1,6 +1,9 @@
 create extension if not exists pgcrypto;
 
 alter table if exists public.menu_items
+  add column if not exists is_active boolean not null default true;
+
+alter table if exists public.menu_items
   add column if not exists item_type text;
 
 update public.menu_items
