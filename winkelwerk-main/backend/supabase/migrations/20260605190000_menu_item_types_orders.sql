@@ -4,6 +4,9 @@ alter table if exists public.menu_items
   add column if not exists is_active boolean not null default true;
 
 alter table if exists public.menu_items
+  add column if not exists sort_order integer not null default 0;
+
+alter table if exists public.menu_items
   add column if not exists item_type text;
 
 update public.menu_items
