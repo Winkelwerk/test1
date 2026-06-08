@@ -1,6 +1,24 @@
 create extension if not exists pgcrypto;
 
 alter table if exists public.menu_items
+  add column if not exists image_url text;
+
+alter table if exists public.menu_items
+  add column if not exists price text;
+
+alter table if exists public.menu_items
+  add column if not exists category text;
+
+alter table if exists public.menu_items
+  add column if not exists badge text;
+
+alter table if exists public.menu_items
+  add column if not exists cta_label text;
+
+alter table if exists public.menu_items
+  add column if not exists cta_url text;
+
+alter table if exists public.menu_items
   add column if not exists is_active boolean not null default true;
 
 alter table if exists public.menu_items
@@ -8,6 +26,18 @@ alter table if exists public.menu_items
 
 alter table if exists public.menu_items
   add column if not exists item_type text;
+
+alter table if exists public.menu_items
+  add column if not exists menu_period text not null default 'all_day';
+
+alter table if exists public.menu_items
+  add column if not exists menu_periods text[] not null default array['all_day']::text[];
+
+alter table if exists public.menu_items
+  add column if not exists created_at timestamptz not null default timezone('utc', now());
+
+alter table if exists public.menu_items
+  add column if not exists updated_at timestamptz not null default timezone('utc', now());
 
 update public.menu_items
 set item_type = case
