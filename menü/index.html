@@ -758,8 +758,12 @@
       && "PushManager" in window;
   }
 
+  function getPushApiBaseUrl() {
+    return String(appConfig.pushFunctionUrl || appConfig.pushApiBaseUrl || "").replace(/\/+$/, "");
+  }
+
   function pushConfigReady() {
-    return Boolean(appConfig.pushApiBaseUrl && appConfig.vapidPublicKey);
+    return Boolean(getPushApiBaseUrl() && appConfig.vapidPublicKey);
   }
 
   function notificationsEnabled() {
@@ -767,7 +771,7 @@
   }
 
   function normalizeApiBaseUrl() {
-    return String(appConfig.pushApiBaseUrl || "").replace(/\/+$/, "");
+    return getPushApiBaseUrl();
   }
 
   function menuApiConfigured() {

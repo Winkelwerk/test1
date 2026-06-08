@@ -82,6 +82,47 @@ function normalizeItemType(value: unknown) {
   return "food";
 }
 
+function looksLikeDrink(record: Record<string, any>) {
+  const category = normalizeText(record.category).toLowerCase();
+  const title = normalizeText(record.title).toLowerCase();
+  const description = normalizeText(record.description).toLowerCase();
+  const badge = normalizeText(record.badge).toLowerCase();
+  const haystack = [title, category, badge, description].join(" ");
+  const drinkCategoryHints = new Set([
+    "drink",
+    "drinks",
+    "getraenk",
+    "getränk",
+    "kalt",
+    "heiss",
+    "heiß",
+    "mocktail",
+    "hausbar",
+    "bar",
+    "kaffee",
+    "tee",
+    "softdrink",
+    "softdrinks"
+  ]);
+  const drinkTitlePattern = /(espresso|cappuccino|latte|macchiato|mokka|limonade|spritz|spritzer|tonic|cola|fanta|sprite|wasser|saft|schorle|shake|smoothie|cocktail|mocktail|bier|wein|aperol|gin|rum|tee|kaffee|chai|matcha)/i;
+
+  return drinkCategoryHints.has(category) || drinkTitlePattern.test(haystack);
+}
+
+function inferItemType(record: Record<string, any>) {
+  const explicitType = normalizeText(record.item_type).toLowerCase();
+
+  if (explicitType === "drink") {
+    return "drink";
+  }
+
+  if (explicitType === "food") {
+    return looksLikeDrink(record) ? "drink" : "food";
+  }
+
+  return looksLikeDrink(record) ? "drink" : "food";
+}
+
 function normalizeMenuPeriods(value: unknown) {
   const rawValues = Array.isArray(value)
     ? value
@@ -119,7 +160,7 @@ function mapMenuItem(record: Record<string, any>) {
     badge: record.badge ?? "",
     ctaLabel: record.cta_label ?? "",
     ctaUrl: record.cta_url ?? "",
-    itemType: normalizeItemType(record.item_type),
+    itemType: inferItemType(record),
     menuPeriod: getPrimaryMenuPeriod(menuPeriods),
     menuPeriods,
     sortOrder: Number(record.sort_order ?? 0),
@@ -221,10 +262,6 @@ async function listMenuItems(itemTypeOrIncludeInactive: unknown = false, include
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
 
-  if (filterByType) {
-    query = query.eq("item_type", filterByType);
-  }
-
   if (!shouldIncludeInactive) {
     query = query.eq("is_active", true);
   }
@@ -235,7 +272,13 @@ async function listMenuItems(itemTypeOrIncludeInactive: unknown = false, include
     throw error;
   }
 
-  return (data ?? []).map(mapMenuItem);
+  const items = (data ?? []).map(mapMenuItem);
+
+  if (filterByType) {
+    return items.filter((item) => item.itemType === filterByType);
+  }
+
+  return items;
 }
 
 async function getNextMenuSortOrder() {
