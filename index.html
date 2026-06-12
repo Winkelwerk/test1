@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Winkelwerk Getränke">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#2b2b2b">
+  <meta name="color-scheme" content="light dark">
+  <title>Winkelwerk Getränke</title>
+  <link rel="icon" type="image/png" href="../winkelwerlk.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+  <link rel="manifest" href="../manifest.webmanifest">
+  <script src="../app-config.js"></script>
+  <link rel="stylesheet" href="../style.css">
+</head>
+
+<body>
+<div class="maintenance-screen" id="maintenanceScreen" aria-live="polite">
+  <div class="maintenance-card">
+    <img src="../winkelwerlk.png" alt="Winkelwerk">
+    <p class="maintenance-kicker">Bitte etwas Geduld</p>
+    <h2>Website wird gerade bearbeitet</h2>
+    <p id="maintenanceMessage">Bitte später erneut versuchen.</p>
+  </div>
+</div>
+
+<div class="menu-icon" onclick="toggleMenu()">&#9776;</div>
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Zum Dunkelmodus wechseln">Dunkelmodus</button>
+
+<nav id="sideMenu">
+  <a href="../" onclick="toggleMenu()">Startseite</a>
+  <a href="../men%C3%BC/" onclick="toggleMenu()">Men&uuml;</a>
+  <a href="./" onclick="toggleMenu()">Getr&auml;nke</a>
+  <a href="../bestellen/" onclick="toggleMenu()">Bestellen</a>
+  <a href="../#about" onclick="toggleMenu()">&Uuml;ber uns</a>
+  <a href="../#contact" onclick="toggleMenu()">Kontakt</a>
+  <a href="../#location" onclick="toggleMenu()">Standort</a>
+  <a href="../inbox/" onclick="toggleMenu()">Postfach</a>
+  <div class="nav-divider"></div>
+  <button class="notify-toggle" id="notifyToggle" type="button" data-state="off" aria-pressed="false">
+    <span class="notify-copy">
+      <span class="notify-title">Push-Hinweise</span>
+      <span class="notify-status" id="notifyStatus">Aus</span>
+    </span>
+    <span class="notify-switch" aria-hidden="true"></span>
+  </button>
+  <p class="notify-hint" id="notifyHint">Aktiviert Browser-Benachrichtigungen f&uuml;r Winkelwerk.</p>
+</nav>
+
+<header>
+  <div class="hero-content">
+    <p class="page-eyebrow">Getr&auml;nke</p>
+    <h1>Winkelwerk Getränke</h1>
+    <p>Heiß, kalt und frisch gemischt. Die Getränkekarte wird direkt aus dem Backend geladen und passt perfekt zum Menü.</p>
+    <div class="hero-actions">
+      <a class="btn" href="../bestellen/">Jetzt bestellen</a>
+      <a class="ghost-btn" href="../men%C3%BC/">Zum Men&uuml;</a>
+    </div>
+  </div>
+</header>
+
+<section>
+  <h2>Unsere Getränkekarte</h2>
+  <p class="menu-copy">Diese Seite zeigt nur die aktiven Getränke aus dem Adminbereich. So bleibt die Karte schlank und klar.</p>
+  <div class="menu" id="drinkGrid"></div>
+  <p class="menu-state is-hidden" id="drinkState"></p>
+</section>
+
+<footer>
+  <div class="footer-row">
+    <p>&copy; 2026 Winkelwerk</p>
+    <a class="footer-admin-link" href="../admin/">Admin</a>
+  </div>
+</footer>
+
+<script>
+  const root = document.documentElement;
+  const appConfig = window.WINKELWERK_APP_CONFIG || {};
+  const themeToggle = document.getElementById("themeToggle");
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  const storageKey = "winkelwerk-desktop-theme";
+  const notificationKey = "winkelwerk-notifications-enabled";
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+  const notifyToggle = document.getElementById("notifyToggle");
+  const notifyStatus = document.getElementById("notifyStatus");
+  const notifyHint = document.getElementById("notifyHint");
+  const menuGrid = document.getElementById("drinkGrid");
+  const menuState = document.getElementById("drinkState");
+  const maintenanceScreen = document.getElementById("maintenanceScreen");
+  const maintenanceMessage = document.getElementById("maintenanceMessage");
+  const inboxUrl = new URL("../inbox/", window.location.href).href;
+  
+  const defaultSiteSettings = {
+    maintenanceMode: false,
+    maintenanceMessage: "Website wird gerade bearbeitet. Bitte später erneut versuchen."
+  };
+
+  // ... (Die vorhandenen Funktionen isDesktopDevice bis normalizeDrinkItem bleiben gleich)
+  // [Gekürzt für die Übersicht, hier kommen deine bestehenden Funktionen hin]
+
+  async function loadSiteSettings() {
+    if (!menuApiConfigured()) {
+      applySiteSettings(defaultSiteSettings);
+      return;
+    }
+    try {
+      const response = await fetch(normalizeApiBaseUrl() + "/settings");
+      if (!response.ok) throw new Error();
+      const settings = await response.json();
+      applySiteSettings(settings);
+    } catch (e) {
+      applySiteSettings(defaultSiteSettings);
+    }
+  }
+
+  // ... (Der Rest deines Skripts ab resolvePublicUrl bis Ende)
+
+  // Initialisierung am Ende
+  syncThemeWithDevice();
+  updateNotificationUi();
+  loadSiteSettings();
+  loadDrinks();
+</script>
+</body>
+</html>
