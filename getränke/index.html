@@ -376,6 +376,30 @@
     setMenuState("", true);
   }
 
+  async function loadSiteSettings() {
+    if (!menuApiConfigured()) {
+      applySiteSettings(defaultSiteSettings);
+      return;
+    }
+
+    try {
+      const response = await fetch(normalizeApiBaseUrl() + "/site-settings", {
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error("Site settings request failed");
+      }
+
+      const result = await response.json();
+      const settings = result && result.settings ? result.settings : defaultSiteSettings;
+      applySiteSettings(settings);
+    } catch (error) {
+      console.log(error);
+      applySiteSettings(defaultSiteSettings);
+    }
+  }
+
   async function loadDrinks() {
     if (!menuApiConfigured()) {
       renderMenuItems(defaultDrinkItems, "");
