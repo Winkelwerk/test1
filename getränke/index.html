@@ -362,7 +362,7 @@
     menuGrid.replaceChildren();
 
     if (!normalizedItems.length) {
-      setMenuState(emptyMessage || "Unsere Getränkekarte wird gerade aktualisiert.", false);
+      setMenuState("", true);
       return;
     }
 
@@ -405,8 +405,6 @@
       renderMenuItems(defaultDrinkItems, "");
       return;
     }
-
-    setMenuState("Getränke werden geladen ...", false);
 
     try {
       const response = await fetch(normalizeApiBaseUrl() + "/drinks", {
