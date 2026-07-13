@@ -810,7 +810,7 @@
         </a>
         <a
           class="map-link"
-          href="https://www.google.com/maps/place/Altschauerberg+8,+91448+Emskirchen/@49.5334645,10.7003888,706m/data=!3m2!1e3!4b1!4m6!3m5!1s0x47a2080ff94d1295:0x3c620674f0119ff6!8m2!3d49.5334645!4d10.7029637!16s%2Fg%2F11v07xj993?entry=ttu&g_ep=EgoyMDI2MDQyNy4wIKXMDSoASAFQAw%3D%3D"
+          href="https://www.google.com/maps/place/Altschauerberg+8,+91448+Emskirchen/@49.5334645,10.7003888,706m/data=!3m2!1e3!4b1!4m6!3m5!1s0x47a2080ff94d1295:0x3c620674f0119ff6!8m2!3d49.5334645[...]"
           target="_blank"
           rel="noreferrer">
           In Google Maps öffnen
@@ -880,6 +880,7 @@
     }
   ];
   let serviceWorkerRegistrationPromise;
+  let maintenanceReloadIntervalId = null;
 
   function isDesktopDevice() {
     return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -960,6 +961,23 @@
     };
   }
 
+  function startMaintenanceReload() {
+    if (maintenanceReloadIntervalId !== null) {
+      return;
+    }
+
+    maintenanceReloadIntervalId = setInterval(function () {
+      window.location.href = window.location.href;
+    }, 2000);
+  }
+
+  function stopMaintenanceReload() {
+    if (maintenanceReloadIntervalId !== null) {
+      clearInterval(maintenanceReloadIntervalId);
+      maintenanceReloadIntervalId = null;
+    }
+  }
+
   function applySiteSettings(settings) {
     const normalized = normalizeSiteSettings(settings);
 
@@ -971,6 +989,12 @@
 
     if (maintenanceScreen) {
       maintenanceScreen.setAttribute("aria-hidden", normalized.maintenanceMode ? "false" : "true");
+    }
+
+    if (normalized.maintenanceMode) {
+      startMaintenanceReload();
+    } else {
+      stopMaintenanceReload();
     }
   }
 
@@ -1006,456 +1030,3 @@
 
     return "";
   }
-
-  function setMenuState(message, hidden) {
-    if (!menuState) {
-      return;
-    }
-
-    menuState.textContent = message;
-    menuState.classList.toggle("is-hidden", Boolean(hidden));
-  }
-
-  function createMenuTag(label) {
-    const tag = document.createElement("span");
-    tag.className = "menu-card-tag";
-    tag.textContent = label;
-    return tag;
-  }
-
-  function createMenuCard(item) {
-    const article = document.createElement("article");
-    article.className = "card menu-card";
-
-    const imageUrl = resolvePublicUrl(item.imageUrl);
-
-    if (imageUrl) {
-      const image = document.createElement("img");
-      image.src = imageUrl;
-      image.alt = item.title || "Menü-Eintrag";
-      article.appendChild(image);
-    }
-
-    const body = document.createElement("div");
-    body.className = "menu-card-body";
-
-    const header = document.createElement("div");
-    header.className = "menu-card-header";
-
-    const title = document.createElement("h3");
-    title.className = "menu-card-title";
-    title.textContent = item.title || "Ohne Titel";
-    header.appendChild(title);
-
-    if (item.price) {
-      const price = document.createElement("span");
-      price.className = "menu-card-price";
-      price.textContent = item.price;
-      header.appendChild(price);
-    }
-
-    body.appendChild(header);
-
-    if (item.category || item.badge) {
-      const tags = document.createElement("div");
-      tags.className = "menu-card-tags";
-
-      if (item.category) {
-        tags.appendChild(createMenuTag(item.category));
-      }
-
-      if (item.badge) {
-        tags.appendChild(createMenuTag(item.badge));
-      }
-
-      body.appendChild(tags);
-    }
-
-    const description = document.createElement("p");
-    description.className = "menu-card-description";
-    description.textContent = item.description;
-    body.appendChild(description);
-
-    const ctaUrl = resolvePublicUrl(item.ctaUrl);
-
-    if (item.ctaLabel && ctaUrl) {
-      const link = document.createElement("a");
-      link.className = "menu-card-link";
-      link.href = ctaUrl;
-      link.textContent = item.ctaLabel;
-      body.appendChild(link);
-    }
-
-    article.appendChild(body);
-    return article;
-  }
-
-  function renderMenuItems(items, emptyMessage) {
-    if (!menuGrid) {
-      return;
-    }
-
-    const normalizedItems = (Array.isArray(items) ? items : [])
-      .map(normalizeMenuItem)
-      .filter(function (item) {
-        return item.title && item.description;
-      });
-
-    menuGrid.replaceChildren();
-
-    if (!normalizedItems.length) {
-      setMenuState(emptyMessage || "Unser Menü wird gerade aktualisiert.", false);
-      return;
-    }
-
-    const fragment = document.createDocumentFragment();
-
-    normalizedItems.forEach(function (item) {
-      fragment.appendChild(createMenuCard(item));
-    });
-
-    menuGrid.appendChild(fragment);
-    setMenuState("", true);
-  }
-
-  async function loadMenuItems() {
-    if (!menuApiConfigured()) {
-      renderMenuItems(defaultMenuItems, "");
-      return;
-    }
-
-    setMenuState("Menü wird geladen ...", false);
-
-    try {
-      const response = await fetch(normalizeApiBaseUrl() + "/menu", {
-        cache: "no-store"
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Menu request failed");
-      }
-
-      const result = await response.json();
-      const items = Array.isArray(result && result.items) ? result.items : [];
-
-      if (!items.length) {
-        renderMenuItems([], "Unser Menü wird gerade aktualisiert.");
-        return;
-      }
-
-      renderMenuItems(items, "");
-    } catch (error) {
-      console.log(error);
-      renderMenuItems(defaultMenuItems, "");
-    }
-  }
-
-  async function loadSiteSettings() {
-    if (!menuApiConfigured()) {
-      applySiteSettings(defaultSiteSettings);
-      return defaultSiteSettings;
-    }
-
-    try {
-      const response = await fetch(normalizeApiBaseUrl() + "/site-settings", {
-        cache: "no-store"
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Site settings request failed");
-      }
-
-      const result = await response.json();
-      const settings = normalizeSiteSettings(result && result.settings ? result.settings : defaultSiteSettings);
-      applySiteSettings(settings);
-      return settings;
-    } catch (error) {
-      console.log(error);
-      applySiteSettings(defaultSiteSettings);
-      return defaultSiteSettings;
-    }
-  }
-
-  function vapidKeyToUint8Array(base64String) {
-    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const safeBase64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-    const raw = window.atob(safeBase64);
-    const output = new Uint8Array(raw.length);
-
-    for (let index = 0; index < raw.length; index += 1) {
-      output[index] = raw.charCodeAt(index);
-    }
-
-    return output;
-  }
-
-  async function getServiceWorkerRegistration() {
-    if (!notificationsSupported()) {
-      return null;
-    }
-
-    if (!serviceWorkerRegistrationPromise) {
-      serviceWorkerRegistrationPromise = navigator.serviceWorker.register("./service-worker.js", {
-        scope: "./"
-      });
-    }
-
-    return serviceWorkerRegistrationPromise;
-  }
-
-  async function postPushJson(path, payload) {
-    const response = await fetch(normalizeApiBaseUrl() + path, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || "Push request failed");
-    }
-
-    const contentType = response.headers.get("content-type") || "";
-    return contentType.includes("application/json") ? response.json() : null;
-  }
-
-  async function getCurrentPushSubscription() {
-    if (!notificationsSupported()) {
-      return null;
-    }
-
-    const registration = await getServiceWorkerRegistration();
-    return registration ? registration.pushManager.getSubscription() : null;
-  }
-
-  async function saveInboxMessage(payload) {
-    if (!("serviceWorker" in navigator)) {
-      return;
-    }
-
-    const registration = await getServiceWorkerRegistration();
-
-    if (registration && registration.active) {
-      registration.active.postMessage({
-        type: "SAVE_INBOX_MESSAGE",
-        payload
-      });
-    }
-  }
-
-  function setNotificationUi(mode, statusText, hintHtml) {
-    if (!notifyToggle || !notifyStatus || !notifyHint) {
-      return;
-    }
-
-    notifyToggle.dataset.state = mode === "on" ? "on" : "off";
-    notifyToggle.setAttribute("aria-pressed", mode === "on" ? "true" : "false");
-    notifyStatus.textContent = statusText;
-    notifyHint.innerHTML = hintHtml;
-  }
-
-  async function updateNotificationUi() {
-    if (!notifyToggle || !notifyStatus || !notifyHint) {
-      return;
-    }
-
-    if (!notificationsSupported()) {
-      notifyToggle.disabled = true;
-      setNotificationUi(
-        "off",
-        "Nicht verfügbar",
-        "Push braucht HTTPS, Service Worker und einen unterst&uuml;tzten Browser."
-      );
-      return;
-    }
-
-    if (!pushConfigReady()) {
-      notifyToggle.disabled = true;
-      setNotificationUi(
-        "off",
-        "Setup fehlt",
-        "Trage zuerst die Backend-URL und den VAPID-Key in <code>app-config.js</code> ein."
-      );
-      return;
-    }
-
-    const subscription = await getCurrentPushSubscription();
-    const enabled = Boolean(subscription) && Notification.permission === "granted";
-    localStorage.setItem(notificationKey, enabled ? "on" : "off");
-    notifyToggle.disabled = false;
-
-    if (enabled) {
-      setNotificationUi(
-        "on",
-        "An",
-        "Interne Hinweise sind aktiv. Neue Nachrichten landen auch im <a href=\"./inbox/\">Postfach</a>."
-      );
-      return;
-    }
-
-    if (Notification.permission === "denied") {
-      setNotificationUi(
-        "off",
-        "Blockiert",
-        "Der Browser blockiert Push. Erlaube Benachrichtigungen in den Browser-Einstellungen."
-      );
-      return;
-    }
-
-    setNotificationUi(
-      "off",
-      "Aus",
-      "Aktiviert Web-Push f&uuml;r interne Winkelwerk-Nachrichten auf diesem Ger&auml;t."
-    );
-  }
-
-  async function enableNotifications() {
-    if (!notificationsSupported()) {
-      await updateNotificationUi();
-      return;
-    }
-
-    if (!pushConfigReady()) {
-      await updateNotificationUi();
-      return;
-    }
-
-    let permission = Notification.permission;
-
-    if (permission !== "granted") {
-      permission = await Notification.requestPermission();
-    }
-
-    if (permission !== "granted") {
-      localStorage.setItem(notificationKey, "off");
-      await updateNotificationUi();
-      return;
-    }
-
-    try {
-      const registration = await getServiceWorkerRegistration();
-      let subscription = await registration.pushManager.getSubscription();
-
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: vapidKeyToUint8Array(String(appConfig.vapidPublicKey))
-        });
-      }
-
-      await postPushJson("/subscribe", {
-        subscription: subscription.toJSON(),
-        site: window.location.origin,
-        page: window.location.pathname,
-        userAgent: navigator.userAgent
-      });
-
-      localStorage.setItem(notificationKey, "on");
-      await saveInboxMessage({
-        id: "local-" + Date.now(),
-        title: "Winkelwerk",
-        body: "Push ist jetzt auf diesem Gerät aktiviert.",
-        url: inboxUrl,
-        sentAt: new Date().toISOString(),
-        source: "system"
-      });
-
-      await registration.showNotification("Winkelwerk", {
-        body: "Push ist jetzt auf diesem Gerät aktiviert.",
-        icon: "./apple-touch-icon.png",
-        badge: "./icon-192.png",
-        data: {
-          url: inboxUrl
-        }
-      });
-    } catch (error) {
-      console.log(error);
-      localStorage.setItem(notificationKey, "off");
-      setNotificationUi(
-        "off",
-        "Fehler",
-        "Die Push-Anmeldung hat nicht funktioniert. Pr&uuml;fe Backend, VAPID-Key und HTTPS."
-      );
-      return;
-    }
-
-    await updateNotificationUi();
-  }
-
-  async function disableNotifications() {
-    try {
-      const subscription = await getCurrentPushSubscription();
-
-      if (subscription) {
-        await postPushJson("/unsubscribe", {
-          endpoint: subscription.endpoint
-        });
-
-        await subscription.unsubscribe();
-      }
-    } catch (error) {
-      console.log(error);
-    }
-
-    localStorage.setItem(notificationKey, "off");
-    await updateNotificationUi();
-  }
-
-  themeToggle.addEventListener("click", function () {
-    const nextTheme = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
-    localStorage.setItem(storageKey, nextTheme);
-    applyTheme(nextTheme);
-  });
-
-  notifyToggle.addEventListener("click", async function () {
-    if (notificationsEnabled()) {
-      await disableNotifications();
-      return;
-    }
-
-    await enableNotifications();
-  });
-
-  function handleSystemThemeChange() {
-    if (!isDesktopDevice() || !localStorage.getItem(storageKey)) {
-      applyTheme(getSystemTheme());
-    }
-  }
-
-  if (typeof prefersDark.addEventListener === "function") {
-    prefersDark.addEventListener("change", handleSystemThemeChange);
-  } else if (typeof prefersDark.addListener === "function") {
-    prefersDark.addListener(handleSystemThemeChange);
-  }
-
-  window.addEventListener("resize", syncThemeWithDevice);
-  window.addEventListener("focus", function () {
-    updateNotificationUi();
-  });
-  syncThemeWithDevice();
-  updateNotificationUi();
-  loadSiteSettings();
-
-  document.getElementById("contact-form").addEventListener("submit", function (e) {
-    e.preventDefault();
-
-    emailjs.sendForm(
-      "service_1mlrs3j",
-      "template_qebzqvw",
-      this
-    ).then(() => {
-      alert("Nachricht gesendet");
-      this.reset();
-    }, (error) => {
-      alert("Fehler beim Senden");
-      console.log(error);
-    });
-  });
-</script>
-
-</body>
-</html>
