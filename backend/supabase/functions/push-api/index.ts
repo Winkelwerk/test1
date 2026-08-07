@@ -1,5 +1,4 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import webpush from "npm:web-push@3.6.7";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,7 +23,6 @@ if (!vapidPublicKey || !vapidPrivateKey) {
 }
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
-webpush.setVapidDetails(`mailto:${vapidContactEmail}`, vapidPublicKey, vapidPrivateKey);
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -785,6 +783,9 @@ Deno.serve(async (request) => {
       if (adminError) {
         return adminError;
       }
+
+      const webpush = (await import("npm:web-push@3.6.7")).default;
+      webpush.setVapidDetails(`mailto:${vapidContactEmail}`, vapidPublicKey, vapidPrivateKey);
 
       const title = String(body?.title ?? "").trim();
       const messageBody = String(body?.body ?? "").trim();
