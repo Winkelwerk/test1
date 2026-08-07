@@ -172,11 +172,13 @@
   }
 
   function toggleMenu() {
-    if (window.matchMedia("(hover: hover)").matches) {
+    const sideMenu = document.getElementById("sideMenu");
+
+    if (!sideMenu) {
       return;
     }
 
-    document.getElementById("sideMenu").classList.toggle("open");
+    sideMenu.classList.toggle("open");
   }
 
   function notificationsSupported() {
@@ -186,8 +188,12 @@
       && "PushManager" in window;
   }
 
+  function getPushApiBaseUrl() {
+    return String(appConfig.pushFunctionUrl || appConfig.pushApiBaseUrl || "").replace(/\/+$/, "");
+  }
+
   function pushConfigReady() {
-    return Boolean(appConfig.pushApiBaseUrl && appConfig.vapidPublicKey);
+    return Boolean(getPushApiBaseUrl() && appConfig.vapidPublicKey);
   }
 
   function notificationsEnabled() {
@@ -195,7 +201,7 @@
   }
 
   function normalizeApiBaseUrl() {
-    return String(appConfig.pushApiBaseUrl || "").replace(/\/+$/, "");
+    return getPushApiBaseUrl();
   }
 
   function menuApiConfigured() {
@@ -358,7 +364,7 @@
     menuGrid.replaceChildren();
 
     if (!normalizedItems.length) {
-      setMenuState(emptyMessage || "Unsere Getränkekarte wird gerade aktualisiert.", false);
+      setMenuState("", true);
       return;
     }
 
@@ -372,13 +378,35 @@
     setMenuState("", true);
   }
 
+  async function loadSiteSettings() {
+    if (!menuApiConfigured()) {
+      applySiteSettings(defaultSiteSettings);
+      return;
+    }
+
+    try {
+      const response = await fetch(normalizeApiBaseUrl() + "/site-settings", {
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error("Site settings request failed");
+      }
+
+      const result = await response.json();
+      const settings = result && result.settings ? result.settings : defaultSiteSettings;
+      applySiteSettings(settings);
+    } catch (error) {
+      console.log(error);
+      applySiteSettings(defaultSiteSettings);
+    }
+  }
+
   async function loadDrinks() {
     if (!menuApiConfigured()) {
       renderMenuItems(defaultDrinkItems, "");
       return;
     }
-
-    setMenuState("Getränke werden geladen ...", false);
 
     try {
       const response = await fetch(normalizeApiBaseUrl() + "/drinks", {

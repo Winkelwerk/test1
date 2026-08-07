@@ -39,21 +39,21 @@
   <a href="../#location" onclick="toggleMenu()">Standort</a>
   <a href="../inbox/" onclick="toggleMenu()">Postfach</a>
   <div class="nav-divider"></div>
-  <button class="notify-toggle" id="notifyToggle" type="button" data-state="off" aria-pressed="false">
+  <button class="notify-toggle" id="notifyToggle" type="button" data-state="off" aria-pressed="false" disabled>
     <span class="notify-copy">
       <span class="notify-title">Push-Hinweise</span>
-      <span class="notify-status" id="notifyStatus">Aus</span>
+      <span class="notify-status" id="notifyStatus">Info</span>
     </span>
     <span class="notify-switch" aria-hidden="true"></span>
   </button>
-  <p class="notify-hint" id="notifyHint">Aktiviert Browser-Benachrichtigungen f&uuml;r Winkelwerk.</p>
+  <p class="notify-hint" id="notifyHint">Diese Seite dient nur zum Bestellen. Push-Hinweise verwaltest du auf den Info-Seiten oder im Admin.</p>
 </nav>
 
 <header>
   <div class="hero-content">
     <p class="page-eyebrow">Bestellmen&uuml;</p>
     <h1>Winkelwerk bestellen</h1>
-    <p>Wähle Speisen und Getränke aus, lege sie in den Warenkorb und sende eine saubere Demo-Bestellung ab.</p>
+    <p>W&auml;hle Speisen und Getr&auml;nke aus, pr&uuml;fe den Warenkorb rechts und sende die Bestellung direkt ab.</p>
     <div class="hero-actions">
       <a class="btn" href="../men%C3%BC/">Zum Men&uuml;</a>
       <a class="ghost-btn" href="../getr%C3%A4nke/">Getr&auml;nke</a>
@@ -62,8 +62,9 @@
 </header>
 
 <section>
-  <h2>Speisen & Getränke</h2>
-  <p class="menu-copy">Alles hier wird aus dem Backend geladen. Du kannst mehrere Positionen kombinieren und direkt als Demo abschicken.</p>
+  <h2>Speisen &amp; Getr&auml;nke</h2>
+  <p class="menu-copy">Die Karte wird live aus dem Backend geladen. Du kannst mehrere Positionen kombinieren und unten als Demo-Bestellung absenden.</p>
+  <p class="status" id="catalogStatus"></p>
 
   <div class="catalog-layout">
     <div class="catalog-panel" id="catalogPanel">
@@ -71,7 +72,7 @@
         <div class="catalog-group-head">
           <div>
             <h3>Speisen</h3>
-            <p>Aktive Gerichte aus der Menükarte.</p>
+            <p>Aktive Gerichte aus der Speisekarte.</p>
           </div>
           <span class="tag" id="foodCount">0 Artikel</span>
         </div>
@@ -81,8 +82,8 @@
       <div class="catalog-group">
         <div class="catalog-group-head">
           <div>
-            <h3>Getränke</h3>
-            <p>Die Getränke-Karte direkt aus dem Backend.</p>
+            <h3>Getr&auml;nke</h3>
+            <p>Aktive Getr&auml;nke aus der Getr&auml;nkekarte.</p>
           </div>
           <span class="tag" id="drinkCount">0 Artikel</span>
         </div>
@@ -96,7 +97,7 @@
           <div>
             <p class="admin-kicker">Warenkorb</p>
             <h3>Deine Auswahl</h3>
-            <p class="lead">Hier siehst du die aktuell ausgewählten Positionen und die Demo-Summe.</p>
+            <p class="lead">Hier siehst du die aktuellen Positionen und die Summe deiner Bestellung.</p>
           </div>
           <button class="ghost-btn small-btn" id="clearCartButton" type="button">Leeren</button>
         </div>
@@ -115,7 +116,7 @@
         </div>
 
         <form class="order-form" id="orderForm">
-          <h3>Bestellung senden</h3>
+          <h3>Bestellung abschicken</h3>
 
           <label>
             Name
@@ -142,7 +143,7 @@
         </form>
       </div>
 
-      <p class="order-disclaimer">Hinweis: Diese Bestellung ist nur eine Demo. Nichts wird wirklich zubereitet oder ausgegeben, und wir unterstützen keine Lebensmittelverschwendung.</p>
+      <p class="order-disclaimer">Hinweis: Diese Bestellung ist nur eine Demo. Nichts wird wirklich zubereitet oder ausgegeben, und wir unterst&uuml;tzen keine Lebensmittelverschwendung.</p>
     </aside>
   </div>
 </section>
@@ -155,124 +156,118 @@
 </footer>
 
 <script>
-  const root = document.documentElement;
   const appConfig = window.WINKELWERK_APP_CONFIG || {};
+  const root = document.documentElement;
   const themeToggle = document.getElementById("themeToggle");
   const themeMeta = document.querySelector('meta[name="theme-color"]');
   const storageKey = "winkelwerk-desktop-theme";
-  const notificationKey = "winkelwerk-notifications-enabled";
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
-  const notifyToggle = document.getElementById("notifyToggle");
-  const notifyStatus = document.getElementById("notifyStatus");
-  const notifyHint = document.getElementById("notifyHint");
-  const maintenanceScreen = document.getElementById("maintenanceScreen");
-  const maintenanceMessage = document.getElementById("maintenanceMessage");
+  const orderForm = document.getElementById("orderForm");
+  const clearCartButton = document.getElementById("clearCartButton");
+  const orderStatus = document.getElementById("orderStatus");
+  const catalogStatus = document.getElementById("catalogStatus");
   const foodCatalog = document.getElementById("foodCatalog");
   const drinkCatalog = document.getElementById("drinkCatalog");
   const foodCount = document.getElementById("foodCount");
   const drinkCount = document.getElementById("drinkCount");
   const cartList = document.getElementById("cartList");
-  const orderForm = document.getElementById("orderForm");
-  const orderStatus = document.getElementById("orderStatus");
-  const clearCartButton = document.getElementById("clearCartButton");
   const orderTotal = document.getElementById("orderTotal");
   const orderCount = document.getElementById("orderCount");
-  const inboxUrl = new URL("../inbox/", window.location.href).href;
+  const maintenanceScreen = document.getElementById("maintenanceScreen");
+  const maintenanceMessage = document.getElementById("maintenanceMessage");
+
   const defaultSiteSettings = {
     maintenanceMode: false,
     maintenanceMessage: "Website wird gerade bearbeitet. Bitte später erneut versuchen."
   };
+
   const defaultFoodItems = [
     {
+      id: "demo-smashburger",
       title: "Smashburger",
-      description: "Frisch gesmashtes Rindfleisch-Patty im weichen Bun mit hausgemachter Sauce.",
+      description: "Frisch gesmashtes Rindfleisch-Patty vom Holzkohlegrill im Sesam-Bun.",
       imageUrl: "https://oldworldgardenfarms.com/wp-content/uploads/2025/05/smashburger-735x735.jpg",
       category: "Burger",
       badge: "Beliebt",
-      price: "14,90 EUR",
-      priceValue: 14.9,
+      price: "13,90 €",
+      priceValue: 13.9,
       itemType: "food",
-      sortOrder: 1,
-      menuPeriods: ["lunch", "dinner"],
-      ctaLabel: "",
-      ctaUrl: ""
+      menuPeriods: ["all_day"]
     },
     {
+      id: "demo-tandoori",
       title: "Tandoori Chicken",
-      description: "Saftig mariniert und mit fein gerösteten Gewürzen serviert.",
+      description: "Chicken mariniert in Joghurt und Gewürzen, gegrillt im Tandoor.",
       imageUrl: "https://images.getrecipekit.com/20250721213330-Tandoori-Chicken-2.jpg?aspect_ratio=16:9&quality=90&",
       category: "Signature",
-      badge: "Hausfavorit",
-      price: "16,90 EUR",
+      badge: "",
+      price: "16,90 €",
       priceValue: 16.9,
       itemType: "food",
-      sortOrder: 2,
-      menuPeriods: ["dinner"],
-      ctaLabel: "",
-      ctaUrl: ""
-    },
-    {
-      title: "Breakfast Plate",
-      description: "Ei, Brot, frischer Aufschnitt und kleine Extras für den perfekten Start.",
-      imageUrl: "https://images.unsplash.com/photo-1533089860892-a9b9c5f1c5f8?auto=format&fit=crop&w=1200&q=80",
-      category: "Frühstück",
-      badge: "Morgens",
-      price: "11,90 EUR",
-      priceValue: 11.9,
-      itemType: "food",
-      sortOrder: 3,
-      menuPeriods: ["breakfast"],
-      ctaLabel: "",
-      ctaUrl: ""
+      menuPeriods: ["all_day"]
     }
   ];
+
   const defaultDrinkItems = [
     {
+      id: "demo-hauslimonade",
       title: "Hauslimonade",
       description: "Spritzig, frisch und mit feiner Zitrusnote.",
       imageUrl: "https://images.unsplash.com/photo-1621263764928-df1444c5e859?auto=format&fit=crop&w=1200&q=80",
       category: "Kalt",
       badge: "Hausgemacht",
-      price: "4,90 EUR",
+      price: "4,90 €",
       priceValue: 4.9,
       itemType: "drink",
-      sortOrder: 101,
-      menuPeriods: ["all_day"],
-      ctaLabel: "",
-      ctaUrl: ""
+      menuPeriods: ["all_day"]
     },
     {
+      id: "demo-espresso",
       title: "Espresso",
       description: "Klein, stark und perfekt nach dem Essen.",
       imageUrl: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&w=1200&q=80",
       category: "Heiß",
       badge: "Klassiker",
-      price: "2,80 EUR",
+      price: "2,80 €",
       priceValue: 2.8,
       itemType: "drink",
-      sortOrder: 102,
-      menuPeriods: ["all_day"],
-      ctaLabel: "",
-      ctaUrl: ""
+      menuPeriods: ["all_day"]
     },
     {
+      id: "demo-cappuccino",
       title: "Cappuccino",
       description: "Cremiger Espresso mit fein aufgeschäumter Milch.",
       imageUrl: "https://images.unsplash.com/photo-1517701550927-30cf4ba1fe5f?auto=format&fit=crop&w=1200&q=80",
       category: "Heiß",
       badge: "Beliebt",
-      price: "3,90 EUR",
+      price: "3,90 €",
       priceValue: 3.9,
       itemType: "drink",
-      sortOrder: 103,
-      menuPeriods: ["all_day"],
-      ctaLabel: "",
-      ctaUrl: ""
+      menuPeriods: ["all_day"]
     }
   ];
-  let serviceWorkerRegistrationPromise;
-  let catalogItems = [];
+
+  const menuPeriods = {
+    breakfast: { startMinutes: 9 * 60, endMinutes: 12 * 60 },
+    lunch: { startMinutes: 12 * 60, endMinutes: 17 * 60 },
+    dinner: { startMinutes: 17 * 60, endMinutes: 21 * 60 }
+  };
+
+  const scheduledMenuPeriods = ["breakfast", "lunch", "dinner"];
+  let foodItems = [];
+  let drinkItems = [];
   let cart = new Map();
+  let serviceWorkerRegistrationPromise;
+
+  function toggleMenu() {
+    const sideMenu = document.getElementById("sideMenu");
+
+    if (!sideMenu) {
+      return;
+    }
+
+    sideMenu.classList.toggle("open");
+  }
 
   function isDesktopDevice() {
     return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -307,31 +302,12 @@
     applyTheme(getSystemTheme());
   }
 
-  function toggleMenu() {
-    if (window.matchMedia("(hover: hover)").matches) {
-      return;
-    }
-
-    document.getElementById("sideMenu").classList.toggle("open");
-  }
-
-  function notificationsSupported() {
-    return window.isSecureContext
-      && typeof Notification !== "undefined"
-      && "serviceWorker" in navigator
-      && "PushManager" in window;
-  }
-
-  function pushConfigReady() {
-    return Boolean(appConfig.pushApiBaseUrl && appConfig.vapidPublicKey);
-  }
-
-  function notificationsEnabled() {
-    return localStorage.getItem(notificationKey) === "on";
+  function getPushApiBaseUrl() {
+    return String(appConfig.pushFunctionUrl || appConfig.pushApiBaseUrl || "").replace(/\/+$/, "");
   }
 
   function normalizeApiBaseUrl() {
-    return String(appConfig.pushApiBaseUrl || "").replace(/\/+$/, "");
+    return getPushApiBaseUrl();
   }
 
   function menuApiConfigured() {
@@ -364,30 +340,99 @@
   }
 
   function parsePriceValue(value) {
-    const normalized = String(value || "")
-      .replace(/[^\d,.-]/g, "")
-      .replace(",", ".");
-    const parsed = Number.parseFloat(normalized);
+    const raw = String(value || "").trim();
+
+    if (!raw) {
+      return 0;
+    }
+
+    let normalized = raw.replace(/[^\d,.-]/g, "");
+
+    if (normalized.includes(",") && normalized.includes(".")) {
+      if (normalized.lastIndexOf(",") > normalized.lastIndexOf(".")) {
+        normalized = normalized.replace(/\./g, "").replace(",", ".");
+      } else {
+        normalized = normalized.replace(/,/g, "");
+      }
+    } else if (normalized.includes(",")) {
+      normalized = normalized.replace(/\./g, "").replace(",", ".");
+    } else {
+      normalized = normalized.replace(/,/g, "");
+    }
+
+    const parsed = Number(normalized);
     return Number.isFinite(parsed) ? parsed : 0;
   }
 
-  function normalizeCatalogItem(item, fallbackType) {
-    const itemType = String(item && item.itemType ? item.itemType : fallbackType || "food").trim().toLowerCase();
+  function formatCurrency(value) {
+    const amount = Number(value);
+    const normalizedAmount = Number.isFinite(amount) ? amount : 0;
 
-    return {
-      id: String(item && item.id ? item.id : item && item.title ? item.title + "-" + itemType : "").trim(),
-      title: String(item && item.title ? item.title : "").trim(),
-      description: String(item && item.description ? item.description : "").trim(),
-      imageUrl: String(item && item.imageUrl ? item.imageUrl : "").trim(),
-      category: String(item && item.category ? item.category : "").trim(),
-      badge: String(item && item.badge ? item.badge : "").trim(),
-      price: String(item && item.price ? item.price : "").trim(),
-      priceValue: Number.isFinite(Number(item && item.priceValue)) ? Number(item.priceValue) : parsePriceValue(item && item.price),
-      ctaLabel: String(item && item.ctaLabel ? item.ctaLabel : "").trim(),
-      ctaUrl: String(item && item.ctaUrl ? item.ctaUrl : "").trim(),
-      itemType: itemType === "drink" ? "drink" : "food",
-      sortOrder: Number.isFinite(Number(item && item.sortOrder)) ? Number(item.sortOrder) : 0
-    };
+    return new Intl.NumberFormat("de-DE", {
+      style: "currency",
+      currency: "EUR"
+    }).format(normalizedAmount);
+  }
+
+  function normalizeMenuPeriods(value) {
+    const rawValues = Array.isArray(value)
+      ? value
+      : typeof value === "string"
+        ? String(value).replace(/^\{|\}$/g, "").split(",")
+        : [value];
+
+    const uniqueValues = Array.from(new Set(
+      rawValues
+        .map(function (item) {
+          return String(item || "").trim().toLowerCase();
+        })
+        .filter(function (item) {
+          return ["all_day", "breakfast", "lunch", "dinner"].includes(item);
+        })
+    ));
+
+    if (!uniqueValues.length || uniqueValues.includes("all_day")) {
+      return ["all_day"];
+    }
+
+    return ["breakfast", "lunch", "dinner"].filter(function (item) {
+      return uniqueValues.includes(item);
+    });
+  }
+
+  function getBerlinMinutesOfDay() {
+    const formatter = new Intl.DateTimeFormat("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "Europe/Berlin"
+    });
+    const parts = formatter.formatToParts(new Date());
+    const hour = Number(parts.find(function (part) {
+      return part.type === "hour";
+    })?.value || 0);
+    const minute = Number(parts.find(function (part) {
+      return part.type === "minute";
+    })?.value || 0);
+    return (hour * 60) + minute;
+  }
+
+  function getActiveScheduledMenuPeriod() {
+    const currentMinutes = getBerlinMinutesOfDay();
+
+    return scheduledMenuPeriods.find(function (key) {
+      const period = menuPeriods[key];
+      return currentMinutes >= period.startMinutes && currentMinutes < period.endMinutes;
+    }) || null;
+  }
+
+  function filterMenuItemsByCurrentTime(items) {
+    const activePeriodKey = getActiveScheduledMenuPeriod();
+
+    return items.filter(function (item) {
+      const periods = normalizeMenuPeriods(item.menuPeriods || item.menuPeriod);
+      return periods.includes("all_day") || (Boolean(activePeriodKey) && periods.includes(activePeriodKey));
+    });
   }
 
   function resolvePublicUrl(value) {
@@ -410,104 +455,185 @@
     return "";
   }
 
-  function formatCurrency(value) {
-    const amount = Number(value);
-    const safeAmount = Number.isFinite(amount) ? amount : 0;
+  function setStatusMessage(element, message, tone, baseClass) {
+    if (!element) {
+      return;
+    }
 
-    return new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: "EUR"
-    }).format(safeAmount);
+    element.className = baseClass || "status";
+
+    if (tone) {
+      element.classList.add(tone);
+    }
+
+    element.textContent = message;
   }
 
-  function setStatus(message, type) {
-    orderStatus.textContent = message;
-    orderStatus.className = "status order-status" + (type ? " " + type : "");
+  function setCatalogStatus(message, tone) {
+    setStatusMessage(catalogStatus, message, tone, "status");
   }
 
-  function createMenuTag(label) {
+  function setOrderStatus(message, tone) {
+    setStatusMessage(orderStatus, message, tone, "status order-status");
+  }
+
+  function normalizeCatalogItem(item, forcedType) {
+    const itemType = forcedType || String(item && (item.itemType || item.type) ? item.itemType || item.type : "").trim().toLowerCase();
+    const normalizedPeriods = normalizeMenuPeriods(item && (item.menuPeriods || item.menuPeriod));
+    const title = String(item && item.title ? item.title : "").trim();
+    const description = String(item && item.description ? item.description : "").trim();
+    const priceText = String(item && (item.priceText || item.price) ? item.priceText || item.price : "").trim();
+    const priceValue = Number.isFinite(Number(item && item.priceValue)) ? Number(item.priceValue) : parsePriceValue(priceText);
+
+    return {
+      id: String(item && item.id ? item.id : title).trim(),
+      title,
+      description: description || "Keine Beschreibung hinterlegt.",
+      imageUrl: String(item && item.imageUrl ? item.imageUrl : "").trim(),
+      category: String(item && item.category ? item.category : "").trim(),
+      badge: String(item && item.badge ? item.badge : "").trim(),
+      priceText: priceText || (priceValue ? formatCurrency(priceValue) : ""),
+      priceValue,
+      itemType: itemType === "drink" ? "drink" : "food",
+      menuPeriod: normalizedPeriods[0] || "all_day",
+      menuPeriods: normalizedPeriods,
+      ctaLabel: String(item && item.ctaLabel ? item.ctaLabel : "").trim(),
+      ctaUrl: String(item && item.ctaUrl ? item.ctaUrl : "").trim(),
+      sortOrder: Number.isFinite(Number(item && item.sortOrder)) ? Number(item.sortOrder) : 0
+    };
+  }
+
+  function compareCatalogItems(a, b) {
+    return Number(a.sortOrder || 0) - Number(b.sortOrder || 0) || String(a.title || "").localeCompare(String(b.title || ""), "de");
+  }
+
+  function normalizeCatalogItems(items, forcedType) {
+    return (Array.isArray(items) ? items : [])
+      .map(function (item) {
+        return normalizeCatalogItem(item, forcedType);
+      })
+      .filter(function (item) {
+        return Boolean(item.title);
+      })
+      .sort(compareCatalogItems);
+  }
+
+  function getItemLabel(item) {
+    return item.itemType === "drink" ? "Getränk" : "Speise";
+  }
+
+  function createTag(label, muted) {
     const tag = document.createElement("span");
-    tag.className = "menu-card-tag";
+    tag.className = "tag" + (muted ? " is-muted" : "");
     tag.textContent = label;
     return tag;
   }
 
-  function getCartQuantity(itemId) {
-    const item = cart.get(String(itemId));
-    return item ? Number(item.quantity || 0) : 0;
-  }
-
-  function getCatalogItemById(itemId) {
-    return catalogItems.find(function (item) {
+  function getCatalogItem(itemId) {
+    return foodItems.concat(drinkItems).find(function (item) {
       return String(item.id) === String(itemId);
     }) || null;
   }
 
-  function upsertCartItem(item, quantityDelta) {
+  function getCartItem(itemId) {
+    return cart.get(String(itemId)) || null;
+  }
+
+  function getCartSummary() {
+    return Array.from(cart.values()).reduce(function (summary, item) {
+      summary.itemCount += Number(item.quantity || 0);
+      summary.totalValue += Number(item.lineTotalValue || 0);
+      return summary;
+    }, {
+      itemCount: 0,
+      totalValue: 0
+    });
+  }
+
+  function updateSummary() {
+    const summary = getCartSummary();
+    orderCount.textContent = String(summary.itemCount);
+    orderTotal.textContent = formatCurrency(summary.totalValue);
+  }
+
+  function addToCart(item) {
     if (!item) {
       return;
     }
 
-    const current = cart.get(item.id);
-    const nextQuantity = (current ? Number(current.quantity || 0) : 0) + quantityDelta;
+    const current = getCartItem(item.id);
+    const quantity = current ? Number(current.quantity || 0) + 1 : 1;
+    const priceValue = Number(item.priceValue || 0);
+    const lineTotalValue = priceValue * quantity;
 
-    if (nextQuantity <= 0) {
-      cart.delete(item.id);
-    } else {
-      cart.set(item.id, Object.assign({}, item, {
-        quantity: nextQuantity
-      }));
-    }
+    cart.set(String(item.id), {
+      id: String(item.id),
+      title: item.title,
+      description: item.description,
+      itemType: item.itemType,
+      category: item.category,
+      badge: item.badge,
+      quantity,
+      priceText: item.priceText || formatCurrency(priceValue),
+      priceValue,
+      lineTotalText: formatCurrency(lineTotalValue),
+      lineTotalValue,
+      imageUrl: item.imageUrl
+    });
 
-    renderCatalog();
     renderCart();
   }
 
-  function addItemToCart(itemId) {
-    const item = getCatalogItemById(itemId);
-    upsertCartItem(item, 1);
+  function increaseCartItem(itemId) {
+    const current = getCartItem(itemId);
+
+    if (!current) {
+      return;
+    }
+
+    const catalogItem = getCatalogItem(itemId);
+    if (!catalogItem) {
+      return;
+    }
+
+    addToCart(catalogItem);
   }
 
-  function decreaseItemInCart(itemId) {
-    const item = getCatalogItemById(itemId);
-    upsertCartItem(item, -1);
+  function decreaseCartItem(itemId) {
+    const current = getCartItem(itemId);
+
+    if (!current) {
+      return;
+    }
+
+    const nextQuantity = Number(current.quantity || 0) - 1;
+
+    if (nextQuantity <= 0) {
+      cart.delete(String(itemId));
+    } else {
+      const priceValue = Number(current.priceValue || 0);
+      current.quantity = nextQuantity;
+      current.lineTotalValue = priceValue * nextQuantity;
+      current.lineTotalText = formatCurrency(current.lineTotalValue);
+      cart.set(String(itemId), current);
+    }
+
+    renderCart();
   }
 
-  function removeItemFromCart(itemId) {
+  function removeCartItem(itemId) {
     cart.delete(String(itemId));
-    renderCatalog();
     renderCart();
   }
 
   function clearCart() {
-    cart = new Map();
-    renderCatalog();
+    cart.clear();
     renderCart();
-  }
-
-  function getCartItems() {
-    return Array.from(cart.values());
-  }
-
-  function getCartSummary() {
-    return getCartItems().reduce(function (summary, item) {
-      const quantity = Number(item.quantity || 0);
-      const priceValue = Number.isFinite(Number(item.priceValue)) ? Number(item.priceValue) : parsePriceValue(item.price);
-      const lineTotal = quantity * priceValue;
-
-      summary.total += lineTotal;
-      summary.quantity += quantity;
-
-      return summary;
-    }, {
-      total: 0,
-      quantity: 0
-    });
   }
 
   function createCatalogCard(item) {
     const article = document.createElement("article");
-    article.className = "card menu-card catalog-card";
+    article.className = "card catalog-card";
 
     const imageUrl = resolvePublicUrl(item.imageUrl);
 
@@ -524,33 +650,40 @@
     const header = document.createElement("div");
     header.className = "menu-card-header";
 
+    const titleWrap = document.createElement("div");
     const title = document.createElement("h3");
     title.className = "menu-card-title";
     title.textContent = item.title || "Ohne Titel";
-    header.appendChild(title);
+    titleWrap.appendChild(title);
 
-    if (item.price) {
+    const typeTag = createTag(getItemLabel(item), false);
+    typeTag.style.marginTop = "8px";
+    titleWrap.appendChild(typeTag);
+    header.appendChild(titleWrap);
+
+    if (item.priceText) {
       const price = document.createElement("span");
       price.className = "menu-card-price";
-      price.textContent = item.price;
+      price.textContent = item.priceText;
       header.appendChild(price);
     }
 
     body.appendChild(header);
 
-    const tags = document.createElement("div");
-    tags.className = "menu-card-tags";
+    if (item.category || item.badge) {
+      const tags = document.createElement("div");
+      tags.className = "menu-card-tags";
 
-    if (item.category) {
-      tags.appendChild(createMenuTag(item.category));
+      if (item.category) {
+        tags.appendChild(createTag(item.category, false));
+      }
+
+      if (item.badge) {
+        tags.appendChild(createTag(item.badge, false));
+      }
+
+      body.appendChild(tags);
     }
-
-    if (item.badge) {
-      tags.appendChild(createMenuTag(item.badge));
-    }
-
-    tags.appendChild(createMenuTag(item.itemType === "drink" ? "Getränk" : "Speise"));
-    body.appendChild(tags);
 
     const description = document.createElement("p");
     description.className = "menu-card-description";
@@ -560,50 +693,17 @@
     const actions = document.createElement("div");
     actions.className = "catalog-card-actions";
 
-    const quantity = getCartQuantity(item.id);
+    const addButton = document.createElement("button");
+    addButton.type = "button";
+    addButton.className = "btn small-btn";
+    addButton.dataset.action = "add";
+    addButton.dataset.id = item.id;
+    addButton.textContent = getCartItem(item.id) ? "Noch eins" : "In den Warenkorb";
+    actions.appendChild(addButton);
 
-    if (quantity > 0) {
-      const control = document.createElement("div");
-      control.className = "quantity-control";
-
-      const minus = document.createElement("button");
-      minus.type = "button";
-      minus.className = "ghost-btn quantity-button";
-      minus.dataset.action = "decrement";
-      minus.dataset.id = item.id;
-      minus.textContent = "−";
-
-      const value = document.createElement("span");
-      value.className = "quantity-value";
-      value.textContent = String(quantity);
-
-      const plus = document.createElement("button");
-      plus.type = "button";
-      plus.className = "ghost-btn quantity-button";
-      plus.dataset.action = "increment";
-      plus.dataset.id = item.id;
-      plus.textContent = "+";
-
-      control.appendChild(minus);
-      control.appendChild(value);
-      control.appendChild(plus);
-      actions.appendChild(control);
-
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.className = "ghost-btn";
-      remove.dataset.action = "remove";
-      remove.dataset.id = item.id;
-      remove.textContent = "Entfernen";
-      actions.appendChild(remove);
-    } else {
-      const add = document.createElement("button");
-      add.type = "button";
-      add.className = "btn";
-      add.dataset.action = "add";
-      add.dataset.id = item.id;
-      add.textContent = "In den Warenkorb";
-      actions.appendChild(add);
+    const quantity = getCartItem(item.id);
+    if (quantity) {
+      actions.appendChild(createTag(quantity.quantity + " im Warenkorb", true));
     }
 
     body.appendChild(actions);
@@ -611,132 +711,172 @@
     return article;
   }
 
-  function renderCatalogGroup(target, items) {
-    if (!target) {
+  function renderCatalogGroup(container, items, emptyMessage) {
+    if (!container) {
       return;
     }
 
-    target.replaceChildren();
+    const visibleItems = filterMenuItemsByCurrentTime(items);
+    container.replaceChildren();
 
-    const sortedItems = items.slice().sort(function (a, b) {
-      return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
-    });
+    if (!visibleItems.length) {
+      const emptyBox = document.createElement("div");
+      emptyBox.className = "order-empty";
+      emptyBox.textContent = emptyMessage;
+      container.appendChild(emptyBox);
+      return;
+    }
 
     const fragment = document.createDocumentFragment();
 
-    sortedItems.forEach(function (item) {
+    visibleItems.forEach(function (item) {
       fragment.appendChild(createCatalogCard(item));
     });
 
-    target.appendChild(fragment);
-  }
-
-  function updateGroupCounts() {
-    if (foodCount) {
-      foodCount.textContent = catalogItems.filter(function (item) {
-        return item.itemType === "food";
-      }).length + " Artikel";
-    }
-
-    if (drinkCount) {
-      drinkCount.textContent = catalogItems.filter(function (item) {
-        return item.itemType === "drink";
-      }).length + " Artikel";
-    }
+    container.appendChild(fragment);
   }
 
   function renderCatalog() {
-    const foodItems = catalogItems.filter(function (item) {
-      return item.itemType === "food";
-    });
+    foodCount.textContent = foodItems.length + " Artikel";
+    drinkCount.textContent = drinkItems.length + " Artikel";
+    renderCatalogGroup(foodCatalog, foodItems, "Zurzeit sind keine Speisen verfügbar.");
+    renderCatalogGroup(drinkCatalog, drinkItems, "Zurzeit sind keine Getränke verfügbar.");
+  }
 
-    const drinkItems = catalogItems.filter(function (item) {
-      return item.itemType === "drink";
-    });
+  function renderCartItem(item) {
+    const article = document.createElement("article");
+    article.className = "cart-item";
 
-    renderCatalogGroup(foodCatalog, foodItems);
-    renderCatalogGroup(drinkCatalog, drinkItems);
-    updateGroupCounts();
+    const top = document.createElement("div");
+    top.className = "cart-item-top";
+
+    const titleWrap = document.createElement("div");
+    const title = document.createElement("strong");
+    title.textContent = item.title;
+    titleWrap.appendChild(title);
+
+    const meta = document.createElement("p");
+    meta.className = "cart-item-meta";
+    meta.textContent = [
+      item.itemType === "drink" ? "Getränk" : "Speise",
+      item.category,
+      item.quantity + " x " + (item.priceText || formatCurrency(item.priceValue))
+    ].filter(Boolean).join(" · ");
+    titleWrap.appendChild(meta);
+
+    top.appendChild(titleWrap);
+
+    const total = document.createElement("strong");
+    total.textContent = item.lineTotalText || formatCurrency(item.lineTotalValue);
+    top.appendChild(total);
+    article.appendChild(top);
+
+    const actions = document.createElement("div");
+    actions.className = "cart-item-actions";
+
+    const quantityControl = document.createElement("div");
+    quantityControl.className = "quantity-control";
+
+    const decreaseButton = document.createElement("button");
+    decreaseButton.type = "button";
+    decreaseButton.className = "ghost-btn small-btn quantity-button";
+    decreaseButton.dataset.action = "decrease";
+    decreaseButton.dataset.id = item.id;
+    decreaseButton.textContent = "−";
+
+    const quantityValue = document.createElement("span");
+    quantityValue.className = "quantity-value";
+    quantityValue.textContent = String(item.quantity);
+
+    const increaseButton = document.createElement("button");
+    increaseButton.type = "button";
+    increaseButton.className = "ghost-btn small-btn quantity-button";
+    increaseButton.dataset.action = "increase";
+    increaseButton.dataset.id = item.id;
+    increaseButton.textContent = "+";
+
+    quantityControl.appendChild(decreaseButton);
+    quantityControl.appendChild(quantityValue);
+    quantityControl.appendChild(increaseButton);
+    actions.appendChild(quantityControl);
+
+    const removeButton = document.createElement("button");
+    removeButton.type = "button";
+    removeButton.className = "ghost-btn small-btn";
+    removeButton.dataset.action = "remove";
+    removeButton.dataset.id = item.id;
+    removeButton.textContent = "Entfernen";
+    actions.appendChild(removeButton);
+
+    article.appendChild(actions);
+    return article;
   }
 
   function renderCart() {
-    if (!cartList || !orderTotal || !orderCount) {
+    cartList.replaceChildren();
+
+    if (!cart.size) {
+      const emptyBox = document.createElement("div");
+      emptyBox.className = "order-empty";
+      emptyBox.textContent = "Noch keine Positionen im Warenkorb.";
+      cartList.appendChild(emptyBox);
+      updateSummary();
+      renderCatalog();
       return;
     }
 
-    const items = getCartItems();
-    const summary = getCartSummary();
+    const fragment = document.createDocumentFragment();
 
-    cartList.replaceChildren();
-
-    if (!items.length) {
-      const empty = document.createElement("div");
-      empty.className = "order-empty";
-      empty.textContent = "Der Warenkorb ist noch leer. Füge links ein paar Positionen hinzu.";
-      cartList.appendChild(empty);
-    } else {
-      items.forEach(function (item) {
-        const quantity = Number(item.quantity || 0);
-        const priceValue = Number.isFinite(Number(item.priceValue)) ? Number(item.priceValue) : parsePriceValue(item.price);
-        const lineTotal = quantity * priceValue;
-
-        const article = document.createElement("article");
-        article.className = "cart-item";
-
-        const top = document.createElement("div");
-        top.className = "cart-item-top";
-
-        const textWrap = document.createElement("div");
-        const title = document.createElement("strong");
-        title.textContent = item.title || "Ohne Titel";
-        const meta = document.createElement("p");
-        meta.className = "cart-item-meta";
-        meta.textContent = quantity + " × " + formatCurrency(priceValue) + " · " + (item.itemType === "drink" ? "Getränk" : "Speise");
-        textWrap.appendChild(title);
-        textWrap.appendChild(meta);
-
-        const lineTotalLabel = document.createElement("strong");
-        lineTotalLabel.textContent = formatCurrency(lineTotal);
-
-        top.appendChild(textWrap);
-        top.appendChild(lineTotalLabel);
-        article.appendChild(top);
-
-        const actions = document.createElement("div");
-        actions.className = "cart-item-actions";
-
-        const minus = document.createElement("button");
-        minus.type = "button";
-        minus.className = "ghost-btn small-btn";
-        minus.dataset.action = "decrement";
-        minus.dataset.id = item.id;
-        minus.textContent = "−";
-
-        const plus = document.createElement("button");
-        plus.type = "button";
-        plus.className = "ghost-btn small-btn";
-        plus.dataset.action = "increment";
-        plus.dataset.id = item.id;
-        plus.textContent = "+";
-
-        const remove = document.createElement("button");
-        remove.type = "button";
-        remove.className = "ghost-btn small-btn";
-        remove.dataset.action = "remove";
-        remove.dataset.id = item.id;
-        remove.textContent = "Entfernen";
-
-        actions.appendChild(minus);
-        actions.appendChild(plus);
-        actions.appendChild(remove);
-        article.appendChild(actions);
-
-        cartList.appendChild(article);
+    Array.from(cart.values())
+      .sort(function (a, b) {
+        return String(a.title || "").localeCompare(String(b.title || ""), "de");
+      })
+      .forEach(function (item) {
+        fragment.appendChild(renderCartItem(item));
       });
+
+    cartList.appendChild(fragment);
+    updateSummary();
+    renderCatalog();
+  }
+
+  function serializeOrderItems() {
+    return Array.from(cart.values()).map(function (item) {
+      return {
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        itemType: item.itemType,
+        category: item.category,
+        badge: item.badge,
+        quantity: Number(item.quantity || 0),
+        priceText: item.priceText || formatCurrency(item.priceValue),
+        priceValue: Number(item.priceValue || 0),
+        lineTotalText: item.lineTotalText || formatCurrency(item.lineTotalValue),
+        lineTotalValue: Number(item.lineTotalValue || 0)
+      };
+    });
+  }
+
+  async function requestJson(path, options) {
+    const method = options && options.method ? options.method : "GET";
+    const payload = options ? options.payload : undefined;
+    const response = await fetch(normalizeApiBaseUrl() + path, {
+      method,
+      headers: payload !== undefined ? {
+        "Content-Type": "application/json"
+      } : undefined,
+      body: payload !== undefined ? JSON.stringify(payload) : undefined,
+      cache: options && options.cache ? options.cache : "no-store"
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Request failed");
     }
 
-    orderTotal.textContent = formatCurrency(summary.total);
-    orderCount.textContent = String(summary.quantity);
+    const contentType = response.headers.get("content-type") || "";
+    return contentType.includes("application/json") ? response.json() : null;
   }
 
   async function loadSiteSettings() {
@@ -746,16 +886,10 @@
     }
 
     try {
-      const response = await fetch(normalizeApiBaseUrl() + "/site-settings", {
+      const result = await requestJson("/site-settings", {
         cache: "no-store"
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Site settings request failed");
-      }
-
-      const result = await response.json();
       const settings = normalizeSiteSettings(result && result.settings ? result.settings : defaultSiteSettings);
       applySiteSettings(settings);
       return settings;
@@ -766,310 +900,177 @@
     }
   }
 
-  async function loadCatalogItems(path, fallbackItems) {
-    if (!menuApiConfigured()) {
-      return fallbackItems.slice().map(function (item) {
-        return normalizeCatalogItem(item, item.itemType || "food");
-      });
-    }
-
-    const response = await fetch(normalizeApiBaseUrl() + path, {
-      cache: "no-store"
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || "Catalog request failed");
-    }
-
-    const result = await response.json();
-    const items = Array.isArray(result && result.items) ? result.items : [];
-
-    return items.length
-      ? items.map(function (item) {
-        return normalizeCatalogItem(item, path === "/drinks" ? "drink" : "food");
-      })
-      : fallbackItems.slice().map(function (item) {
-        return normalizeCatalogItem(item, item.itemType || "food");
-      });
-  }
-
   async function loadCatalog() {
-    try {
-      const [foodResult, drinkResult] = await Promise.allSettled([
-        loadCatalogItems("/menu", defaultFoodItems),
-        loadCatalogItems("/drinks", defaultDrinkItems)
-      ]);
-
-      const foodItems = foodResult.status === "fulfilled" ? foodResult.value : defaultFoodItems.map(function (item) {
-        return normalizeCatalogItem(item, "food");
-      });
-      const drinkItems = drinkResult.status === "fulfilled" ? drinkResult.value : defaultDrinkItems.map(function (item) {
-        return normalizeCatalogItem(item, "drink");
-      });
-
-      catalogItems = foodItems.concat(drinkItems).filter(function (item) {
-        return item.title && item.description;
-      });
-
+    if (!menuApiConfigured()) {
+      foodItems = defaultFoodItems.slice();
+      drinkItems = defaultDrinkItems.slice();
       renderCatalog();
-      renderCart();
-    } catch (error) {
-      console.log(error);
-      catalogItems = defaultFoodItems.map(function (item) {
-        return normalizeCatalogItem(item, "food");
-      }).concat(defaultDrinkItems.map(function (item) {
-        return normalizeCatalogItem(item, "drink");
-      }));
-      renderCatalog();
-      renderCart();
-    }
-  }
-
-  function vapidKeyToUint8Array(base64String) {
-    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const safeBase64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-    const raw = window.atob(safeBase64);
-    const output = new Uint8Array(raw.length);
-
-    for (let index = 0; index < raw.length; index += 1) {
-      output[index] = raw.charCodeAt(index);
-    }
-
-    return output;
-  }
-
-  async function getServiceWorkerRegistration() {
-    if (!notificationsSupported()) {
-      return null;
-    }
-
-    if (!serviceWorkerRegistrationPromise) {
-      serviceWorkerRegistrationPromise = navigator.serviceWorker.register("../service-worker.js", {
-        scope: "../"
-      });
-    }
-
-    return serviceWorkerRegistrationPromise;
-  }
-
-  async function postPushJson(path, payload) {
-    const response = await fetch(normalizeApiBaseUrl() + path, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || "Push request failed");
-    }
-
-    const contentType = response.headers.get("content-type") || "";
-    return contentType.includes("application/json") ? response.json() : null;
-  }
-
-  async function postOrderJson(payload) {
-    const response = await fetch(normalizeApiBaseUrl() + "/orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || "Order request failed");
-    }
-
-    return response.json();
-  }
-
-  async function getCurrentPushSubscription() {
-    if (!notificationsSupported()) {
-      return null;
-    }
-
-    const registration = await getServiceWorkerRegistration();
-    return registration ? registration.pushManager.getSubscription() : null;
-  }
-
-  async function saveInboxMessage(payload) {
-    if (!("serviceWorker" in navigator)) {
+      setCatalogStatus("Backend noch nicht verbunden. Demo-Karte angezeigt.", "warning");
       return;
     }
 
-    const registration = await getServiceWorkerRegistration();
+    setCatalogStatus("Karte wird geladen ...", "");
 
-    if (registration && registration.active) {
-      registration.active.postMessage({
-        type: "SAVE_INBOX_MESSAGE",
+    const [foodResult, drinkResult] = await Promise.allSettled([
+      requestJson("/menu", { cache: "no-store" }),
+      requestJson("/drinks", { cache: "no-store" })
+    ]);
+
+    if (foodResult.status === "fulfilled") {
+      foodItems = normalizeCatalogItems(foodResult.value && foodResult.value.items ? foodResult.value.items : [], "food");
+    } else {
+      console.log(foodResult.reason);
+      foodItems = defaultFoodItems.slice();
+    }
+
+    if (drinkResult.status === "fulfilled") {
+      drinkItems = normalizeCatalogItems(drinkResult.value && drinkResult.value.items ? drinkResult.value.items : [], "drink");
+    } else {
+      console.log(drinkResult.reason);
+      drinkItems = defaultDrinkItems.slice();
+    }
+
+    renderCatalog();
+
+    if (foodResult.status !== "fulfilled" || drinkResult.status !== "fulfilled") {
+      setCatalogStatus("Backend teilweise nicht erreichbar. Nicht geladene Bereiche zeigen Demo-Daten.", "warning");
+      return;
+    }
+
+    if (!foodItems.length && !drinkItems.length) {
+      setCatalogStatus("Zurzeit sind noch keine Einträge im Backend angelegt.", "warning");
+      return;
+    }
+
+    setCatalogStatus("Karte geladen.", "success");
+  }
+
+  async function submitOrder(event) {
+    event.preventDefault();
+
+    if (!menuApiConfigured()) {
+      setOrderStatus("Das Backend ist noch nicht verbunden.", "error");
+      return;
+    }
+
+    if (!cart.size) {
+      setOrderStatus("Bitte lege zuerst mindestens eine Position in den Warenkorb.", "warning");
+      return;
+    }
+
+    const formData = new FormData(orderForm);
+    const customerName = String(formData.get("customer_name") || "").trim();
+    const customerContact = String(formData.get("customer_contact") || "").trim();
+    const pickupTime = String(formData.get("pickup_time") || "").trim();
+    const notes = String(formData.get("notes") || "").trim();
+    const summary = getCartSummary();
+
+    if (!customerName || !customerContact) {
+      setOrderStatus("Bitte trage Name und Kontakt ein.", "warning");
+      return;
+    }
+
+    const payload = {
+      customerName,
+      customerContact,
+      pickupTime,
+      notes,
+      sourcePage: window.location.pathname,
+      totalText: formatCurrency(summary.totalValue),
+      totalValue: summary.totalValue,
+      items: serializeOrderItems(),
+      customer_name: customerName,
+      customer_contact: customerContact,
+      pickup_time: pickupTime,
+      total_text: formatCurrency(summary.totalValue),
+      total_value: summary.totalValue
+    };
+
+    setOrderStatus("Bestellung wird gesendet ...", "");
+
+    try {
+      await requestJson("/orders", {
+        method: "POST",
         payload
       });
-    }
-  }
 
-  function setNotificationUi(mode, statusText, hintHtml) {
-    notifyToggle.dataset.state = mode === "on" ? "on" : "off";
-    notifyToggle.setAttribute("aria-pressed", mode === "on" ? "true" : "false");
-    notifyStatus.textContent = statusText;
-    notifyHint.innerHTML = hintHtml;
-  }
-
-  async function updateNotificationUi() {
-    if (!notificationsSupported()) {
-      notifyToggle.disabled = true;
-      setNotificationUi(
-        "off",
-        "Nicht verfügbar",
-        "Push braucht HTTPS, Service Worker und einen unterstützten Browser."
-      );
-      return;
-    }
-
-    if (!pushConfigReady()) {
-      notifyToggle.disabled = true;
-      setNotificationUi(
-        "off",
-        "Setup fehlt",
-        "Trage zuerst die Backend-URL und den VAPID-Key in <code>../app-config.js</code> ein."
-      );
-      return;
-    }
-
-    const subscription = await getCurrentPushSubscription();
-    const enabled = Boolean(subscription) && Notification.permission === "granted";
-    localStorage.setItem(notificationKey, enabled ? "on" : "off");
-    notifyToggle.disabled = false;
-
-    if (enabled) {
-      setNotificationUi(
-        "on",
-        "An",
-        "Interne Hinweise sind aktiv. Neue Nachrichten landen auch im <a href=\"../inbox/\">Postfach</a>."
-      );
-      return;
-    }
-
-    if (Notification.permission === "denied") {
-      setNotificationUi(
-        "off",
-        "Blockiert",
-        "Der Browser blockiert Push. Erlaube Benachrichtigungen in den Browser-Einstellungen."
-      );
-      return;
-    }
-
-    setNotificationUi(
-      "off",
-      "Aus",
-      "Aktiviert Web-Push für interne Winkelwerk-Nachrichten auf diesem Gerät."
-    );
-  }
-
-  async function enableNotifications() {
-    if (!notificationsSupported() || !pushConfigReady()) {
-      await updateNotificationUi();
-      return;
-    }
-
-    let permission = Notification.permission;
-
-    if (permission !== "granted") {
-      permission = await Notification.requestPermission();
-    }
-
-    if (permission !== "granted") {
-      localStorage.setItem(notificationKey, "off");
-      await updateNotificationUi();
-      return;
-    }
-
-    try {
-      const registration = await getServiceWorkerRegistration();
-      let subscription = await registration.pushManager.getSubscription();
-
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: vapidKeyToUint8Array(String(appConfig.vapidPublicKey))
-        });
-      }
-
-      await postPushJson("/subscribe", {
-        subscription: subscription.toJSON(),
-        site: window.location.origin,
-        page: window.location.pathname,
-        userAgent: navigator.userAgent
-      });
-
-      localStorage.setItem(notificationKey, "on");
-      await saveInboxMessage({
-        id: "local-" + Date.now(),
-        title: "Winkelwerk",
-        body: "Push ist jetzt auf diesem Gerät aktiviert.",
-        url: inboxUrl,
-        sentAt: new Date().toISOString(),
-        source: "system"
-      });
-
-      await registration.showNotification("Winkelwerk", {
-        body: "Push ist jetzt auf diesem Gerät aktiviert.",
-        icon: "../apple-touch-icon.png",
-        badge: "../icon-192.png",
-        data: {
-          url: inboxUrl
-        }
-      });
+      setOrderStatus("Bestellung erfolgreich gespeichert.", "success");
+      orderForm.reset();
+      clearCart();
     } catch (error) {
       console.log(error);
-      localStorage.setItem(notificationKey, "off");
-      setNotificationUi(
-        "off",
-        "Fehler",
-        "Die Push-Anmeldung hat nicht funktioniert. Prüfe Backend, VAPID-Key und HTTPS."
-      );
+      setOrderStatus("Bestellung konnte nicht gespeichert werden. Bitte prüfe das Backend.", "error");
+    }
+  }
+
+  foodCatalog.addEventListener("click", function (event) {
+    const button = event.target.closest("button[data-action='add']");
+
+    if (!button) {
       return;
     }
 
-    await updateNotificationUi();
-  }
+    const item = getCatalogItem(button.dataset.id);
 
-  async function disableNotifications() {
-    try {
-      const subscription = await getCurrentPushSubscription();
-
-      if (subscription) {
-        await postPushJson("/unsubscribe", {
-          endpoint: subscription.endpoint
-        });
-
-        await subscription.unsubscribe();
-      }
-    } catch (error) {
-      console.log(error);
+    if (!item) {
+      return;
     }
 
-    localStorage.setItem(notificationKey, "off");
-    await updateNotificationUi();
-  }
+    addToCart(item);
+  });
+
+  drinkCatalog.addEventListener("click", function (event) {
+    const button = event.target.closest("button[data-action='add']");
+
+    if (!button) {
+      return;
+    }
+
+    const item = getCatalogItem(button.dataset.id);
+
+    if (!item) {
+      return;
+    }
+
+    addToCart(item);
+  });
+
+  cartList.addEventListener("click", function (event) {
+    const button = event.target.closest("button[data-action]");
+
+    if (!button) {
+      return;
+    }
+
+    const action = button.dataset.action;
+    const itemId = button.dataset.id;
+
+    if (action === "increase") {
+      increaseCartItem(itemId);
+      return;
+    }
+
+    if (action === "decrease") {
+      decreaseCartItem(itemId);
+      return;
+    }
+
+    if (action === "remove") {
+      removeCartItem(itemId);
+    }
+  });
+
+  clearCartButton.addEventListener("click", function () {
+    clearCart();
+    setOrderStatus("", "");
+  });
+
+  orderForm.addEventListener("submit", submitOrder);
 
   themeToggle.addEventListener("click", function () {
     const nextTheme = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
     localStorage.setItem(storageKey, nextTheme);
     applyTheme(nextTheme);
-  });
-
-  notifyToggle.addEventListener("click", async function () {
-    if (notificationsEnabled()) {
-      await disableNotifications();
-      return;
-    }
-
-    await enableNotifications();
   });
 
   function handleSystemThemeChange() {
@@ -1084,166 +1085,12 @@
     prefersDark.addListener(handleSystemThemeChange);
   }
 
-  foodCatalog.addEventListener("click", function (event) {
-    const button = event.target.closest("button[data-action]");
-
-    if (!button) {
-      return;
-    }
-
-    const action = button.dataset.action;
-    const itemId = button.dataset.id;
-
-    if (action === "add" || action === "increment") {
-      addItemToCart(itemId);
-      return;
-    }
-
-    if (action === "decrement") {
-      decreaseItemInCart(itemId);
-      return;
-    }
-
-    if (action === "remove") {
-      removeItemFromCart(itemId);
-    }
-  });
-
-  drinkCatalog.addEventListener("click", function (event) {
-    const button = event.target.closest("button[data-action]");
-
-    if (!button) {
-      return;
-    }
-
-    const action = button.dataset.action;
-    const itemId = button.dataset.id;
-
-    if (action === "add" || action === "increment") {
-      addItemToCart(itemId);
-      return;
-    }
-
-    if (action === "decrement") {
-      decreaseItemInCart(itemId);
-      return;
-    }
-
-    if (action === "remove") {
-      removeItemFromCart(itemId);
-    }
-  });
-
-  cartList.addEventListener("click", function (event) {
-    const button = event.target.closest("button[data-action]");
-
-    if (!button) {
-      return;
-    }
-
-    const action = button.dataset.action;
-    const itemId = button.dataset.id;
-
-    if (action === "increment") {
-      addItemToCart(itemId);
-      return;
-    }
-
-    if (action === "decrement") {
-      decreaseItemInCart(itemId);
-      return;
-    }
-
-    if (action === "remove") {
-      removeItemFromCart(itemId);
-    }
-  });
-
-  clearCartButton.addEventListener("click", function () {
-    clearCart();
-  });
-
-  orderForm.addEventListener("submit", async function (event) {
-    event.preventDefault();
-
-    const items = getCartItems();
-
-    if (!items.length) {
-      setStatus("Bitte zuerst mindestens eine Position in den Warenkorb legen.", "warning");
-      return;
-    }
-
-    if (!menuApiConfigured()) {
-      setStatus("Das Backend ist noch nicht verbunden. Bitte trage zuerst die API-URL in app-config.js ein.", "warning");
-      return;
-    }
-
-    const formData = new FormData(orderForm);
-    const customerName = String(formData.get("customer_name") || "").trim();
-    const customerContact = String(formData.get("customer_contact") || "").trim();
-    const pickupTime = String(formData.get("pickup_time") || "").trim();
-    const notes = String(formData.get("notes") || "").trim();
-
-    if (!customerName || !customerContact) {
-      setStatus("Name und Kontakt sind Pflichtfelder.", "warning");
-      return;
-    }
-
-    const payloadItems = items.map(function (item) {
-      const quantity = Number(item.quantity || 0);
-      const priceValue = Number.isFinite(Number(item.priceValue)) ? Number(item.priceValue) : parsePriceValue(item.price);
-      const lineTotalValue = quantity * priceValue;
-
-      return {
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        category: item.category,
-        badge: item.badge,
-        itemType: item.itemType,
-        quantity: quantity,
-        priceText: item.price,
-        priceValue: priceValue,
-        lineTotalText: formatCurrency(lineTotalValue),
-        lineTotalValue: lineTotalValue
-      };
-    });
-
-    const summary = getCartSummary();
-
-    setStatus("Bestellung wird gespeichert ...", "");
-
-    try {
-      const result = await postOrderJson({
-        customerName: customerName,
-        customerContact: customerContact,
-        pickupTime: pickupTime,
-        notes: notes,
-        items: payloadItems,
-        totalText: formatCurrency(summary.total),
-        totalValue: summary.total,
-        sourcePage: window.location.pathname
-      });
-
-      const orderId = result && result.order ? result.order.id : null;
-      setStatus("Demo-Bestellung erfolgreich gespeichert" + (orderId ? " (ID " + orderId + ")" : "") + ".", "success");
-      orderForm.reset();
-      clearCart();
-    } catch (error) {
-      console.log(error);
-      setStatus("Bestellung konnte nicht gespeichert werden. Bitte Backend und API prüfen.", "error");
-    }
-  });
-
   window.addEventListener("resize", syncThemeWithDevice);
-  window.addEventListener("focus", function () {
-    updateNotificationUi();
-  });
   syncThemeWithDevice();
-  updateNotificationUi();
+  applySiteSettings(defaultSiteSettings);
+  renderCart();
   loadSiteSettings();
   loadCatalog();
 </script>
-
 </body>
 </html>
