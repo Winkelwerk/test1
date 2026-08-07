@@ -112,8 +112,17 @@ function looksLikeDrink(record: Record<string, any>) {
 function inferItemType(record: Record<string, any>) {
   const explicitType = normalizeText(record.item_type).toLowerCase();
 
+<<<<<<< HEAD
   if (explicitType === "drink" || explicitType === "food") {
     return explicitType;
+=======
+  if (explicitType === "drink") {
+    return "drink";
+  }
+
+  if (explicitType === "food") {
+    return looksLikeDrink(record) ? "drink" : "food";
+>>>>>>> d22e93c74e0ddfa449da56d78801773a6da0ba4c
   }
 
   return looksLikeDrink(record) ? "drink" : "food";

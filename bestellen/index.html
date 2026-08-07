@@ -260,6 +260,7 @@
   let serviceWorkerRegistrationPromise;
 
   function toggleMenu() {
+<<<<<<< HEAD
     const sideMenu = document.getElementById("sideMenu");
 
     if (!sideMenu) {
@@ -267,6 +268,13 @@
     }
 
     sideMenu.classList.toggle("open");
+=======
+    if (window.matchMedia("(hover: hover)").matches) {
+      return;
+    }
+
+    document.getElementById("sideMenu").classList.toggle("open");
+>>>>>>> d22e93c74e0ddfa449da56d78801773a6da0ba4c
   }
 
   function isDesktopDevice() {
