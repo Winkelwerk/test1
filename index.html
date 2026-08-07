@@ -915,15 +915,72 @@
     applyTheme(getSystemTheme());
   }
 
+  function ensureMenuOverlay() {
+    let overlay = document.getElementById("menuOverlay");
+
+    if (overlay) {
+      return overlay;
+    }
+
+    overlay = document.createElement("button");
+    overlay.id = "menuOverlay";
+    overlay.type = "button";
+    overlay.className = "menu-overlay";
+    overlay.setAttribute("aria-label", "Menü schließen");
+    overlay.addEventListener("click", function () {
+      closeMenu();
+    });
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  function closeMenu() {
+    const sideMenu = document.getElementById("sideMenu");
+    const overlay = document.getElementById("menuOverlay");
+
+    if (sideMenu) {
+      sideMenu.classList.remove("open");
+    }
+
+    if (overlay) {
+      overlay.classList.remove("is-visible");
+    }
+
+    document.body.classList.remove("menu-open");
+  }
+
   function toggleMenu() {
+    if (isDesktopDevice()) {
+      return;
+    }
+
     const sideMenu = document.getElementById("sideMenu");
 
     if (!sideMenu) {
       return;
     }
 
-    sideMenu.classList.toggle("open");
+    const nextOpen = !sideMenu.classList.contains("open");
+    sideMenu.classList.toggle("open", nextOpen);
+    document.body.classList.toggle("menu-open", nextOpen);
+
+    const overlay = ensureMenuOverlay();
+    overlay.classList.toggle("is-visible", nextOpen);
   }
+
+  window.addEventListener("resize", function () {
+    syncThemeWithDevice();
+
+    if (isDesktopDevice()) {
+      closeMenu();
+    }
+  });
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      closeMenu();
+    }
+  });
+  ensureMenuOverlay();
 
   function notificationsSupported() {
     return window.isSecureContext

@@ -323,6 +323,9 @@ nav {
   position: fixed;
   inset: 0 auto 0 0;
   width: 286px;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 88px 0 20px;
   display: flex;
   flex-direction: column;
@@ -340,6 +343,29 @@ nav {
 
 nav.open {
   transform: translateX(0);
+}
+
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1700;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+
+.menu-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.menu-open {
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 @media (hover: hover) {
